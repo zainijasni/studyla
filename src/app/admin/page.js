@@ -20,6 +20,27 @@ const TOPIK_LABEL = {
   'deria':'Deria & Fungsi','haiwan':'Haiwan','tumbuhan':'Tumbuhan','cuaca':'Cuaca','jirim':'Jirim','manusia-badan':'Sistem Badan','cahaya-bunyi':'Cahaya & Bunyi','daya-gerak':'Daya & Gerakan','ekosistem':'Ekosistem','bumi-sumber':'Bumi & Sumber',
 }
 
+// Popular topics to pre-seed — target 20+ questions each
+const SEED_PLAN = [
+  { subject: 'matematik',      topic: 'nombor-bulat',    year: 3 },
+  { subject: 'matematik',      topic: 'tambah-tolak',    year: 3 },
+  { subject: 'matematik',      topic: 'darab-bahagi',    year: 3 },
+  { subject: 'matematik',      topic: 'wang',            year: 3 },
+  { subject: 'matematik',      topic: 'masa-waktu',      year: 3 },
+  { subject: 'matematik',      topic: 'nombor-bulat',    year: 4 },
+  { subject: 'matematik',      topic: 'tambah-tolak',    year: 4 },
+  { subject: 'matematik',      topic: 'darab-bahagi',    year: 4 },
+  { subject: 'matematik',      topic: 'wang',            year: 4 },
+  { subject: 'matematik',      topic: 'pecahan',         year: 4 },
+  { subject: 'bahasa-melayu',  topic: 'ejaan-bm',        year: 3 },
+  { subject: 'bahasa-melayu',  topic: 'tatabahasa-asas', year: 3 },
+  { subject: 'bahasa-melayu',  topic: 'pemahaman',       year: 3 },
+  { subject: 'bahasa-melayu',  topic: 'ejaan-bm',        year: 4 },
+  { subject: 'bahasa-melayu',  topic: 'tatabahasa-asas', year: 4 },
+  { subject: 'bahasa-melayu',  topic: 'tatabahasa-lanjut', year: 4 },
+  { subject: 'bahasa-melayu',  topic: 'pemahaman',       year: 4 },
+]
+
 const COLOR = {
   violet: { badge: 'bg-violet-100 text-violet-700', btn: 'bg-violet-700 hover:bg-violet-800', ring: 'ring-violet-400', light: 'bg-violet-50 border-violet-200' },
   emerald: { badge: 'bg-emerald-100 text-emerald-700', btn: 'bg-emerald-700 hover:bg-emerald-800', ring: 'ring-emerald-400', light: 'bg-emerald-50 border-emerald-200' },
@@ -74,6 +95,13 @@ export default function AdminPage() {
   const [generating, setGenerating] = useState(false)
   const [genResult, setGenResult] = useState(null)
 
+  // Seed popular
+  const [seedRunning, setSeedRunning] = useState(false)
+  const [seedDone, setSeedDone]       = useState(0)
+  const [seedTotal, setSeedTotal]     = useState(0)
+  const [seedCurrent, setSeedCurrent] = useState(null)
+  const [seedLog, setSeedLog]         = useState([])
+
   useEffect(() => {
     async function init() {
       const { data: { session: initSession } } = await supabase.auth.getSession()
@@ -126,6 +154,51 @@ export default function AdminPage() {
       setData(prev => ({ ...prev, users: prev.users.filter(u => u.id !== deleteModal.id), stats: { ...prev.stats, total_users: prev.stats.total_users - 1 } }))
       setDeleteModal(null)
     }
+  }
+
+  async function handleSeedAll() {
+    const MIN_STOCK = 20
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) return
+
+    // Only seed topics below MIN_STOCK
+    const toSeed = SEED_PLAN.filter(item => {
+      const key = `${item.subject}|${item.topic}|${item.year}`
+      return (data?.stockMap?.[key] || 0) < MIN_STOCK
+    })
+
+    if (toSeed.length === 0) { alert('Semua topik popular dah cukup stok (≥20)! 🎉'); return }
+
+    setSeedRunning(true)
+    setSeedDone(0)
+    setSeedTotal(toSeed.length)
+    setSeedLog([])
+    setSeedCurrent(null)
+
+    const token = session.access_token
+    const log = []
+
+    for (let i = 0; i < toSeed.length; i++) {
+      const item = toSeed[i]
+      setSeedCurrent(item)
+      try {
+        const res = await fetch('/api/admin/bulk-generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ subject: item.subject, topic: item.topic, year: item.year, batches: 5 }),
+        })
+        const json = await res.json()
+        log.push({ ...item, generated: json.generated || 0, ok: true })
+      } catch {
+        log.push({ ...item, generated: 0, ok: false })
+      }
+      setSeedDone(i + 1)
+      setSeedLog([...log])
+    }
+
+    setSeedCurrent(null)
+    setSeedRunning(false)
+    await loadData()
   }
 
   async function handleBulkGenerate() {
@@ -420,9 +493,78 @@ export default function AdminPage() {
           {/* ── TAB: JANA AI ── */}
           {tab === 'jana' && (
             <div className="p-5 space-y-5">
-              <div>
-                <p className="text-sm font-bold text-slate-700 mb-1">Jana Soalan AI Secara Pukal</p>
-                <p className="text-xs text-slate-400">Setiap batch = 3 soalan. 5 batch = ~15 soalan per topik. Soalan disimpan dalam DB dan dikitar semula untuk semua user.</p>
+
+              {/* ── Seed Popular Topics ── */}
+              <div className="bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-200 rounded-2xl p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black text-violet-800">🌱 Seed Topik Popular</p>
+                    <p className="text-xs text-violet-500 mt-0.5">Jana soalan untuk topik paling kerap digunakan. Topik dengan &lt;20 soalan akan di-seed (5 batch = ~15 soalan).</p>
+                  </div>
+                  <button
+                    onClick={handleSeedAll}
+                    disabled={seedRunning || generating}
+                    className="flex-shrink-0 bg-violet-700 hover:bg-violet-800 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl active:scale-95 transition-all">
+                    {seedRunning ? 'Running...' : 'Seed Semua'}
+                  </button>
+                </div>
+
+                {/* Progress */}
+                {(seedRunning || seedLog.length > 0) && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-violet-600 font-semibold">
+                        {seedRunning ? `${seedDone}/${seedTotal} topik selesai` : `✅ Selesai — ${seedDone} topik di-seed`}
+                      </span>
+                      <span className="text-violet-400">{seedTotal > 0 ? Math.round((seedDone/seedTotal)*100) : 0}%</span>
+                    </div>
+                    <div className="h-2 bg-violet-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-violet-500 rounded-full transition-all duration-500"
+                        style={{ width: `${seedTotal > 0 ? (seedDone/seedTotal)*100 : 0}%` }} />
+                    </div>
+                    {seedCurrent && (
+                      <p className="text-[10px] text-violet-500 animate-pulse">
+                        ⏳ Jana: {TOPIK_LABEL[seedCurrent.topic]} · {SUBJEK[seedCurrent.subject]?.label} Thn {seedCurrent.year}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Log */}
+                {seedLog.length > 0 && !seedRunning && (
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {seedLog.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-[10px]">
+                        <span className="text-slate-600">{TOPIK_LABEL[item.topic]} · Thn {item.year}</span>
+                        <span className={item.ok ? 'text-emerald-600 font-bold' : 'text-red-500'}>
+                          {item.ok ? `+${item.generated} soalan` : 'gagal'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Stock grid */}
+                {!seedRunning && seedLog.length === 0 && (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {SEED_PLAN.map((item, i) => {
+                      const stock = data?.stockMap?.[`${item.subject}|${item.topic}|${item.year}`] || 0
+                      return (
+                        <div key={i} className="bg-white rounded-lg px-2.5 py-1.5 flex items-center justify-between border border-violet-100">
+                          <span className="text-[10px] text-slate-600 truncate">{TOPIK_LABEL[item.topic]} T{item.year}</span>
+                          <span className={`text-[10px] font-black flex-shrink-0 ml-1 ${stock >= 20 ? 'text-emerald-600' : stock >= 5 ? 'text-amber-500' : 'text-red-500'}`}>
+                            {stock}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-slate-100 pt-4">
+                <p className="text-sm font-bold text-slate-700 mb-1">Jana Manual Per Topik</p>
+                <p className="text-xs text-slate-400">Pilih topik spesifik untuk di-generate secara manual.</p>
               </div>
 
               {/* Subjek */}
