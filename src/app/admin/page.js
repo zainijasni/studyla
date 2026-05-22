@@ -50,6 +50,7 @@ function StatCard({ emoji, label, value, sub, color = 'text-slate-800' }) {
 export default function AdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [tab, setTab] = useState('pengguna')
   const [data, setData] = useState(null)
 
@@ -84,14 +85,28 @@ export default function AdminPage() {
   }, [router])
 
   async function loadData() {
-    const { data: { session } } = await supabase.auth.getSession()
-    const res = await fetch('/api/admin/data', {
-      headers: { Authorization: `Bearer ${session.access_token}` }
-    })
-    if (!res.ok) { router.push('/dashboard'); return }
-    const json = await res.json()
-    setData(json)
-    setLoading(false)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        setLoadError('Sesi tamat. Sila log masuk semula.')
+        setLoading(false)
+        return
+      }
+      const res = await fetch('/api/admin/data', {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setLoadError(`API Error ${res.status}: ${json.error || 'Unknown'} — ${json.detail || ''}`)
+        setLoading(false)
+        return
+      }
+      setData(json)
+      setLoading(false)
+    } catch (err) {
+      setLoadError(`Ralat: ${err.message}`)
+      setLoading(false)
+    }
   }
 
   async function handleDelete() {
@@ -133,6 +148,26 @@ export default function AdminPage() {
       <div className="flex flex-col items-center gap-3">
         <div className="w-10 h-10 border-4 border-violet-100 border-t-violet-600 rounded-full animate-spin" />
         <p className="text-sm text-slate-400">Memuatkan data admin...</p>
+      </div>
+    </div>
+  )
+
+  if (loadError) return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
+      <div className="bg-white rounded-2xl border border-red-200 shadow-sm p-6 max-w-sm w-full text-center">
+        <div className="text-4xl mb-3">⚠️</div>
+        <h2 className="font-bold text-slate-800 mb-2">Gagal Muatkan Admin</h2>
+        <p className="text-xs text-red-600 bg-red-50 rounded-xl p-3 mb-4 text-left font-mono break-all">{loadError}</p>
+        <div className="flex gap-2">
+          <button onClick={() => { setLoading(true); setLoadError(null); loadData() }}
+            className="flex-1 bg-violet-700 text-white font-bold py-2.5 rounded-xl text-sm">
+            Cuba Semula
+          </button>
+          <button onClick={() => router.push('/dashboard')}
+            className="flex-1 bg-slate-100 text-slate-600 font-semibold py-2.5 rounded-xl text-sm">
+            Dashboard
+          </button>
+        </div>
       </div>
     </div>
   )
