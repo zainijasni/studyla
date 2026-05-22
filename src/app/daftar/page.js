@@ -9,6 +9,7 @@ export default function DaftarPage() {
   const router = useRouter()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -19,7 +20,10 @@ export default function DaftarPage() {
     setLoading(true)
     setError('')
     if (password.length < 6) { setError('Kata laluan mesti sekurang-kurangnya 6 aksara.'); setLoading(false); return }
-    const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } })
+    const { error } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { full_name: fullName, phone } }
+    })
     if (error) { setError(error.message); setLoading(false); return }
     router.push('/onboarding')
   }
@@ -57,6 +61,14 @@ export default function DaftarPage() {
                            focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:bg-white transition-all" />
             </div>
           ))}
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-600 mb-1.5">No. Telefon</label>
+            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
+              placeholder="01X-XXXXXXXX" required
+              className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent focus:bg-white transition-all" />
+          </div>
 
           <div>
             <label className="block text-sm font-semibold text-slate-600 mb-1.5">Kata Laluan</label>

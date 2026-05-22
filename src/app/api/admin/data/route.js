@@ -88,6 +88,7 @@ export async function GET(request) {
         id: u.id,
         email: u.email,
         name: u.user_metadata?.full_name || '-',
+        phone: u.user_metadata?.phone || '-',
         created_at: u.created_at,
         last_sign_in: u.last_sign_in_at,
         child_count: kids.length,

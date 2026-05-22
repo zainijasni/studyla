@@ -351,20 +351,35 @@ export default function AdminPage() {
                       </div>
                     </div>
                     {isExpanded && (
-                      <div className="bg-slate-50 px-4 py-3 border-t border-slate-100">
+                      <div className="bg-slate-50 px-4 py-3 border-t border-slate-100 space-y-3">
+                        {/* Contact details */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-white border border-slate-200 rounded-xl px-3 py-2">
+                            <p className="text-[10px] text-slate-400 font-semibold mb-0.5">📱 No. Telefon</p>
+                            <p className="text-xs font-bold text-slate-700">{u.phone !== '-' ? u.phone : <span className="text-slate-400 font-normal italic">Tiada</span>}</p>
+                          </div>
+                          <div className="bg-white border border-slate-200 rounded-xl px-3 py-2">
+                            <p className="text-[10px] text-slate-400 font-semibold mb-0.5">🕐 Login Terakhir</p>
+                            <p className="text-xs font-bold text-slate-700">{fmt(u.last_sign_in)}</p>
+                          </div>
+                        </div>
+                        {/* Children */}
                         {u.children.length === 0
                           ? <p className="text-xs text-slate-400">Tiada profil anak lagi.</p>
                           : (
-                            <div className="flex flex-wrap gap-2">
-                              {u.children.map(child => (
-                                <div key={child.id} className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 flex items-center gap-1.5">
-                                  <div className="w-5 h-5 bg-violet-100 rounded-lg flex items-center justify-center text-violet-700 text-[10px] font-bold">
-                                    {child.name.charAt(0)}
+                            <div>
+                              <p className="text-[10px] text-slate-400 font-semibold mb-1.5">👦 Profil Anak</p>
+                              <div className="flex flex-wrap gap-2">
+                                {u.children.map(child => (
+                                  <div key={child.id} className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 flex items-center gap-1.5">
+                                    <div className="w-5 h-5 bg-violet-100 rounded-lg flex items-center justify-center text-violet-700 text-[10px] font-bold">
+                                      {child.name.charAt(0)}
+                                    </div>
+                                    <span className="text-xs font-semibold text-slate-700">{child.name}</span>
+                                    <span className="text-[10px] text-slate-400">Thn {child.year}</span>
                                   </div>
-                                  <span className="text-xs font-semibold text-slate-700">{child.name}</span>
-                                  <span className="text-[10px] text-slate-400">Thn {child.year}</span>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
                           )}
                       </div>
