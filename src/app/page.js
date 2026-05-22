@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -27,12 +27,33 @@ const STEPS = [
 export default function LandingPage() {
   const router = useRouter()
 
+  // Synchronous localStorage sniff — if Supabase token exists, user is likely logged in.
+  // Show a spinner immediately so they don't see the landing page flash before redirect.
+  const [maybeLoggedIn] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return Object.keys(localStorage).some(k => k.includes('auth-token'))
+  })
+  const [ready, setReady] = useState(false)
+
   useEffect(() => {
-    // Logged-in users go straight to dashboard
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) router.replace('/dashboard')
+      if (session?.user) {
+        router.replace('/dashboard')
+      } else {
+        setReady(true)
+      }
     })
   }, [router])
+
+  // Show spinner while checking — avoids showing landing page to logged-in users
+  if (maybeLoggedIn || !ready) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-violet-800 via-purple-800 to-indigo-900 flex flex-col items-center justify-center gap-4">
+        <img src="/logo.png" alt="StudyLa" className="h-12 object-contain" />
+        <div className="w-7 h-7 border-[3px] border-white/20 border-t-white rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-white">

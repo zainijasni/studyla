@@ -40,7 +40,7 @@ export default function DaftarPage() {
       {/* Form card */}
       <div className="flex-1 bg-white rounded-t-3xl -mt-4 px-6 pt-8 pb-8 shadow-xl">
         <h2 className="text-xl font-bold text-slate-800 mb-1">Daftar Akaun</h2>
-        <p className="text-sm text-slate-400 mb-6">Percuma untuk Matematik Tahun 1–2.</p>
+        <p className="text-sm text-slate-400 mb-6">Percuma untuk semua subjek & tahun.</p>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
