@@ -35,8 +35,8 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ms" className={`${jakarta.variable} h-full antialiased`}>
-      <body className={`${jakarta.className} min-h-full bg-slate-50 text-slate-900`}>
+    <html lang="ms" className={`${jakarta.variable} h-full antialiased`} style={{ backgroundColor: '#f8fafc' }}>
+      <body className={`${jakarta.className} min-h-full bg-slate-50 text-slate-900`} style={{ backgroundColor: '#f8fafc' }}>
         {children}
         <RegisterSW />
       </body>

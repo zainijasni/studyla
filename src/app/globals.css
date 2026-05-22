@@ -120,11 +120,16 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Remove 300ms tap delay on iOS Safari */
+    touch-action: manipulation;
   }
   body {
     @apply bg-background text-foreground;
+    /* Prevent flash of dark on iOS PWA launch */
+    background-color: #f8fafc;
   }
   html {
     @apply font-sans;
+    background-color: #f8fafc;
   }
 }
