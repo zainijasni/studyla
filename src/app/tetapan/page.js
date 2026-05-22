@@ -88,14 +88,14 @@ export default function TetapanPage() {
   )
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="h-screen bg-slate-50 flex overflow-hidden">
 
       {/* Sidebar */}
-      <div className="hidden md:block">
+      <div className="hidden md:block flex-shrink-0">
         <Sidebar user={user} />
       </div>
 
-      <main className="flex-1 md:ml-60 flex flex-col min-h-screen">
+      <main className="flex-1 md:ml-60 flex flex-col h-full overflow-hidden">
 
         {/* Header */}
         <div className="bg-gradient-to-br from-violet-800 via-purple-800 to-indigo-900 px-5 md:px-10 pt-8 pb-6 md:pt-12 md:pb-8 flex-shrink-0">

@@ -246,13 +246,13 @@ function LaporanContent() {
   )
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <div className="hidden md:block"><Sidebar user={user} /></div>
+    <div className="h-screen bg-slate-50 flex overflow-hidden">
+      <div className="hidden md:block flex-shrink-0"><Sidebar user={user} /></div>
 
-      <main className="flex-1 md:ml-60 flex flex-col min-h-screen">
+      <main className="flex-1 md:ml-60 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-br from-violet-800 via-purple-800 to-indigo-900 px-5 md:px-10 pt-8 pb-6 md:pt-12 md:pb-8 flex-shrink-0">
-          <div className="flex items-center justify-between mb-5">
+        <div className="bg-gradient-to-br from-violet-800 via-purple-800 to-indigo-900 px-5 md:px-10 pt-10 pb-5 md:pt-12 md:pb-8 flex-shrink-0">
+          <div className="flex items-center justify-between mb-4">
             <img src="/logo.png" alt="StudyLa" className="h-7 object-contain" />
             <button onClick={() => router.push('/dashboard')}
               className="text-white/60 hover:text-white text-xs border border-white/20 px-3 py-1.5 rounded-lg transition-colors">
@@ -260,11 +260,11 @@ function LaporanContent() {
             </button>
           </div>
           <h1 className="text-white text-xl md:text-2xl font-bold">Laporan Kemajuan</h1>
-          <p className="text-violet-200 text-xs md:text-sm mt-1">Pantau perkembangan belajar anak.</p>
+          <p className="text-violet-200 text-xs md:text-sm mt-0.5">Pantau perkembangan belajar anak.</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 md:px-10 py-5 pb-24 md:pb-8">
-        <div className="max-w-2xl mx-auto space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4 pb-24 md:pb-8">
+        <div className="max-w-2xl mx-auto space-y-3">
 
           {/* Child selector */}
           {children.length > 1 && (

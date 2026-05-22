@@ -65,15 +65,15 @@ export default function DashboardPage() {
   const parentName = user?.user_metadata?.full_name?.split(' ')[0] || 'Parent'
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="h-screen bg-slate-50 flex overflow-hidden">
 
       {/* Sidebar — desktop only */}
-      <div className="hidden md:block">
+      <div className="hidden md:block flex-shrink-0">
         <Sidebar user={user} />
       </div>
 
       {/* Main content */}
-      <main className="flex-1 md:ml-60 flex flex-col min-h-screen">
+      <main className="flex-1 md:ml-60 flex flex-col h-full overflow-hidden">
 
         {/* Banner */}
         <div className="relative bg-gradient-to-br from-violet-800 via-purple-800 to-indigo-900
