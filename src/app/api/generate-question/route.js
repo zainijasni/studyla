@@ -2,11 +2,6 @@ import { generateQuestions } from '@/lib/gemini'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
-
 // ─── Label map ────────────────────────────────────────────────────────────────
 
 const SUBJECT_LABEL = {
@@ -138,6 +133,11 @@ function parseJSON(text) {
 // ─── POST handler ─────────────────────────────────────────────────────────────
 
 export async function POST(request) {
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+
   try {
     const { subject, topic, year } = await request.json()
 
