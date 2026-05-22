@@ -1,0 +1,636 @@
+'use client'
+
+import { useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+
+// ─── Layer config (warna berbeza tiap layer) ────────────────────────────────
+
+const LAYER_CONFIG = {
+  1: {
+    label: 'Faham Soalan',
+    emoji: '🧠',
+    bg: 'bg-violet-50',
+    border: 'border-violet-200',
+    badge: 'bg-violet-600',
+    text: 'text-violet-700',
+    light: 'bg-violet-100',
+    btn: 'bg-gradient-to-r from-violet-600 to-purple-600 shadow-purple-200',
+    dot: 'bg-violet-600',
+    step: 'bg-violet-600',
+  },
+  2: {
+    label: 'Cara Selesaikan',
+    emoji: '💡',
+    bg: 'bg-sky-50',
+    border: 'border-sky-200',
+    badge: 'bg-sky-600',
+    text: 'text-sky-700',
+    light: 'bg-sky-100',
+    btn: 'bg-gradient-to-r from-sky-600 to-blue-600 shadow-blue-200',
+    dot: 'bg-sky-600',
+    step: 'bg-sky-600',
+  },
+  3: {
+    label: 'Cuba Jawab',
+    emoji: '✏️',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200',
+    badge: 'bg-emerald-600',
+    text: 'text-emerald-700',
+    light: 'bg-emerald-100',
+    btn: 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-emerald-200',
+    dot: 'bg-emerald-600',
+    step: 'bg-emerald-600',
+  },
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function groupSoalanByLayers(rows) {
+  const map = {}
+  rows.forEach((row) => {
+    const key = row.question_text
+    if (!map[key]) map[key] = {}
+    map[key][row.layer] = row
+  })
+  const grouped = Object.values(map).filter((s) => s[1])
+  return grouped.sort(() => Math.random() - 0.5)
+}
+
+// ─── Layer Stepper ────────────────────────────────────────────────────────────
+
+function LayerStepper({ currentLayer }) {
+  const layers = [1, 2, 3]
+  return (
+    <div className="flex items-center gap-0 mb-5">
+      {layers.map((num, i) => {
+        const cfg = LAYER_CONFIG[num]
+        const done = currentLayer > num
+        const active = currentLayer === num
+        return (
+          <div key={num} className="flex items-center flex-1">
+            <div className="flex-1 flex flex-col items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold
+                transition-all duration-300
+                ${done ? 'bg-emerald-500 text-white scale-90'
+                  : active ? `${cfg.badge} text-white ring-4 ring-white shadow-md`
+                  : 'bg-slate-200 text-slate-400'}`}>
+                {done ? '✓' : cfg.emoji}
+              </div>
+              <span className={`text-[9px] mt-1 text-center leading-tight font-semibold
+                ${active ? cfg.text : done ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {LAYER_CONFIG[num].label}
+              </span>
+            </div>
+            {i < 2 && (
+              <div className={`h-0.5 w-8 mx-1 mt-[-14px] rounded-full transition-all duration-500
+                ${currentLayer > num + 1 ? 'bg-emerald-400' : currentLayer > num ? 'bg-slate-300' : 'bg-slate-200'}`} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Parent Script ────────────────────────────────────────────────────────────
+
+function ParentScript({ text, namaAnak }) {
+  if (!text) return null
+  const formatted = text.replace(/\[Nama\]/g, namaAnak)
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mt-3">
+      <p className="text-xs font-bold text-amber-600 mb-1.5 flex items-center gap-1">
+        💬 <span>Cakap dengan anak:</span>
+      </p>
+      <p className="text-sm text-amber-800 leading-relaxed italic">"{formatted}"</p>
+    </div>
+  )
+}
+
+// ─── Layer 1 — Faham Soalan ───────────────────────────────────────────────────
+
+function Layer1({ soalan, namaAnak, onFaham }) {
+  const cfg = LAYER_CONFIG[1]
+  const breakdown = soalan[1]?.question_breakdown || []
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Soalan */}
+      <div className={`${cfg.bg} ${cfg.border} border-2 rounded-2xl p-4`}>
+        <div className={`text-xs font-bold ${cfg.text} uppercase tracking-wide mb-2 flex items-center gap-1`}>
+          <span>📋</span> Soalan
+        </div>
+        <p className="text-base text-slate-800 leading-relaxed font-semibold">
+          {soalan[1]?.question_text}
+        </p>
+      </div>
+
+      {/* Soalan pemecah */}
+      {breakdown.length > 0 && (
+        <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+          <p className={`text-xs font-bold ${cfg.text} uppercase tracking-wide mb-3`}>
+            🧩 Bantu anak faham soalan:
+          </p>
+          <ul className="space-y-2.5">
+            {breakdown.map((s, i) => (
+              <li key={i} className="flex gap-3 text-sm text-slate-700">
+                <span className={`${cfg.badge} text-white text-xs font-bold w-5 h-5 rounded-full
+                                 flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                  {i + 1}
+                </span>
+                <span className="leading-snug">{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <ParentScript text={soalan[1]?.parent_script} namaAnak={namaAnak} />
+
+      <button
+        onClick={onFaham}
+        className={`w-full ${cfg.btn} shadow-lg text-white font-bold rounded-2xl py-4 text-sm
+                   hover:opacity-90 active:scale-95 transition-all mt-1`}
+      >
+        Anak Faham ✓
+      </button>
+    </div>
+  )
+}
+
+// ─── Layer 2 — Cara Selesaikan ────────────────────────────────────────────────
+
+function Layer2({ soalan, namaAnak, onFaham }) {
+  const cfg = LAYER_CONFIG[2]
+  const steps = soalan[2]?.answer_steps || []
+  const breakdown = soalan[2]?.question_breakdown || []
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Soalan mini */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+        <p className="text-xs text-slate-500 leading-relaxed">{soalan[1]?.question_text}</p>
+      </div>
+
+      {/* Soalan panduan */}
+      {breakdown.length > 0 && (
+        <div className={`${cfg.bg} ${cfg.border} border-2 rounded-2xl p-4`}>
+          <p className={`text-xs font-bold ${cfg.text} uppercase tracking-wide mb-3`}>
+            🤔 Tanya anak:
+          </p>
+          <ul className="space-y-2">
+            {breakdown.map((s, i) => (
+              <li key={i} className="flex gap-2.5 text-sm text-slate-700 items-start">
+                <span className={`${cfg.text} font-bold mt-0.5`}>→</span>
+                <span>{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Langkah */}
+      {steps.length > 0 && (
+        <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+          <p className={`text-xs font-bold ${cfg.text} uppercase tracking-wide mb-3`}>
+            📝 Jalan Kerja:
+          </p>
+          <ol className="space-y-2.5">
+            {steps.map((step, i) => (
+              <li key={i} className="flex gap-3 text-sm text-slate-800 items-start">
+                <span className={`${cfg.badge} text-white text-xs font-bold w-6 h-6 rounded-full
+                                 flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                  {i + 1}
+                </span>
+                <span className="leading-snug">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      <ParentScript text={soalan[2]?.parent_script} namaAnak={namaAnak} />
+
+      <button
+        onClick={onFaham}
+        className={`w-full ${cfg.btn} shadow-lg text-white font-bold rounded-2xl py-4 text-sm
+                   hover:opacity-90 active:scale-95 transition-all mt-1`}
+      >
+        Faham Cara ✓
+      </button>
+    </div>
+  )
+}
+
+// ─── Layer 3 — Cuba Jawab ─────────────────────────────────────────────────────
+
+function Layer3({ soalan, namaAnak, cubaan, onBetul, onHampirBetul }) {
+  const cfg = LAYER_CONFIG[3]
+  const steps = soalan[3]?.answer_steps || []
+  const jawapan = soalan[3]?.answer || soalan[1]?.answer || ''
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Soalan mini */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+        <p className="text-xs text-slate-500 leading-relaxed">{soalan[1]?.question_text}</p>
+      </div>
+
+      {/* Format jawapan */}
+      {steps.length > 0 && (
+        <div className={`${cfg.bg} ${cfg.border} border-2 rounded-2xl p-4`}>
+          <p className={`text-xs font-bold ${cfg.text} uppercase tracking-wide mb-3`}>
+            📖 Rujukan ibu bapa:
+          </p>
+          <div className="space-y-1.5 font-mono">
+            {steps.map((step, i) => (
+              <p key={i} className="text-sm text-slate-700 bg-white px-3 py-2 rounded-xl border border-slate-100">
+                {step}
+              </p>
+            ))}
+          </div>
+          {jawapan && (
+            <div className={`mt-3 pt-3 border-t ${cfg.border}`}>
+              <p className={`text-xs font-bold ${cfg.text} mb-1`}>Jawapan:</p>
+              <p className="text-sm font-bold text-slate-800 bg-white px-3 py-2 rounded-xl">{jawapan}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <ParentScript text={soalan[3]?.parent_script} namaAnak={namaAnak} />
+
+      {/* Cubaan hint */}
+      {cubaan >= 2 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3 flex items-start gap-2">
+          <span>⚠️</span>
+          <p className="text-sm text-orange-700">
+            Anak cuba {cubaan} kali — mungkin perlu semak topik asas dulu.
+          </p>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="grid grid-cols-2 gap-3 mt-1">
+        <button
+          onClick={onHampirBetul}
+          className="bg-white border-2 border-slate-200 text-slate-700 font-semibold
+                     rounded-2xl py-4 text-sm hover:bg-slate-50 active:scale-95 transition-all"
+        >
+          Hampir Betul ⟳
+        </button>
+        <button
+          onClick={onBetul}
+          className={`${cfg.btn} shadow-lg text-white font-bold rounded-2xl py-4 text-sm
+                     hover:opacity-90 active:scale-95 transition-all`}
+        >
+          Betul! ✓
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Session Page ────────────────────────────────────────────────────────
+
+function SesiContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const anakId = searchParams.get('anak')
+  const subjek = searchParams.get('subjek')
+  const topik = searchParams.get('topik')
+  const tahun = parseInt(searchParams.get('tahun') || '3')
+
+  const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
+  const [generateError, setGenerateError] = useState('')
+  const [anak, setAnak] = useState(null)
+  const [soalanList, setSoalanList] = useState([])
+  const [sessionId, setSessionId] = useState(null)
+
+  const [soalanIdx, setSoalanIdx] = useState(0)
+  const [layer, setLayer] = useState(1)
+  const [cubaan, setCubaan] = useState(0)
+  const [results, setResults] = useState([])
+  const [selesai, setSelesai] = useState(false)
+
+  useEffect(() => {
+    async function loadSesi() {
+      const { data: childData } = await supabase
+        .from('children').select('*').eq('id', anakId).single()
+      if (!childData) { router.push('/dashboard'); return }
+      setAnak(childData)
+
+      const { data: rows } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('subject', subjek)
+        .eq('topic', topik)
+        .eq('is_approved', true)
+        .order('layer', { ascending: true })
+
+      if (!rows || rows.length === 0) {
+        setGenerating(true)
+        setLoading(false)
+        try {
+          const res = await fetch('/api/generate-question', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subject: subjek, topic: topik, year: tahun }),
+          })
+          const genData = await res.json()
+          if (!genData.success) throw new Error(genData.error || 'Gagal jana soalan')
+
+          const { data: newRows } = await supabase
+            .from('questions').select('*')
+            .eq('subject', subjek).eq('topic', topik).eq('is_approved', true)
+            .order('layer', { ascending: true })
+
+          if (newRows && newRows.length > 0) {
+            const grouped = groupSoalanByLayers(newRows)
+            setSoalanList(grouped)
+            const { data: { user } } = await supabase.auth.getUser()
+            const { data: session } = await supabase.from('sessions')
+              .insert({ child_id: anakId, parent_id: user.id, subject: subjek, topic: topik, year: tahun, total_questions: grouped.length })
+              .select().single()
+            if (session) setSessionId(session.id)
+          }
+        } catch (err) {
+          setGenerateError(err.message || 'Gagal jana soalan. Cuba lagi.')
+        }
+        setGenerating(false)
+        return
+      }
+
+      const grouped = groupSoalanByLayers(rows)
+      setSoalanList(grouped)
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data: session } = await supabase.from('sessions')
+        .insert({ child_id: anakId, parent_id: user.id, subject: subjek, topic: topik, year: tahun, total_questions: grouped.length })
+        .select().single()
+      if (session) setSessionId(session.id)
+      setLoading(false)
+    }
+    loadSesi()
+  }, [anakId, subjek, topik, tahun, router])
+
+  function handleFahamLayer() { setLayer((p) => p + 1) }
+
+  async function handleBetul() {
+    await saveResult(true)
+    nextSoalan(true)
+  }
+
+  async function handleHampirBetul() {
+    setCubaan((p) => p + 1)
+    setLayer(2)
+  }
+
+  async function saveResult(correct) {
+    const soalan = soalanList[soalanIdx]
+    if (!sessionId || !soalan[1]) return
+    await supabase.from('session_questions').insert({
+      session_id: sessionId,
+      question_id: soalan[1].id,
+      layer_reached: 3,
+      stuck_at_layer: cubaan > 0 ? 3 : null,
+      attempts: cubaan + 1,
+      correct,
+    })
+    setResults((prev) => [...prev, { correct, cubaan: cubaan + 1 }])
+  }
+
+  function nextSoalan(correct) {
+    if (soalanIdx + 1 >= soalanList.length) {
+      finishSession(correct)
+    } else {
+      setSoalanIdx((p) => p + 1)
+      setLayer(1)
+      setCubaan(0)
+    }
+  }
+
+  async function finishSession(lastCorrect) {
+    const allResults = [...results, { correct: lastCorrect }]
+    const betulCount = allResults.filter((r) => r.correct).length
+    const total = soalanList.length
+    const peratus = Math.round((betulCount / total) * 100)
+    const status = peratus >= 80 ? 'mastered' : peratus >= 50 ? 'progressing' : 'struggling'
+
+    if (sessionId) {
+      await supabase.from('sessions').update({ completed: true, correct_count: betulCount }).eq('id', sessionId)
+    }
+    await supabase.from('topic_progress').upsert({
+      child_id: anakId, subject: subjek, topic: topik, year: tahun, status,
+      last_session_at: new Date().toISOString(),
+    }, { onConflict: 'child_id,subject,topic' })
+    await supabase.rpc('increment_topic_sessions', { p_child_id: anakId, p_subject: subjek, p_topic: topik }).catch(() => {})
+    setSelesai(true)
+  }
+
+  // ── Loading ─────────────────────────────────────────────────────────────────
+
+  if (loading || generating) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4 px-4">
+        <div className="w-14 h-14 border-4 border-slate-200 border-t-blue-900 rounded-full animate-spin" />
+        <div className="text-center">
+          <p className="text-slate-700 font-bold text-base">
+            {generating ? '✨ Menjana soalan baru...' : 'Memuatkan sesi...'}
+          </p>
+          {generating && (
+            <p className="text-slate-400 text-sm mt-1">AI sedang cipta soalan. Sekejap!</p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Error / Empty ────────────────────────────────────────────────────────────
+
+  if (soalanList.length === 0) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6">
+        <div className="text-6xl mb-4">📚</div>
+        <h2 className="text-lg font-bold text-slate-800 mb-2 text-center">
+          {generateError ? 'Gagal jana soalan' : 'Soalan belum tersedia'}
+        </h2>
+        <p className="text-sm text-slate-500 text-center mb-8 max-w-xs">
+          {generateError || 'Bank soalan untuk topik ini akan ditambah tidak lama lagi.'}
+        </p>
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          {generateError && (
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-gradient-to-r from-violet-600 to-indigo-700 text-white font-bold py-3.5 rounded-2xl"
+            >
+              Cuba Lagi
+            </button>
+          )}
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="bg-white border border-slate-200 text-slate-600 font-semibold py-3 rounded-2xl text-sm"
+          >
+            Kembali ke Laman Utama
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Selesai ──────────────────────────────────────────────────────────────────
+
+  if (selesai) {
+    const betul = results.filter((r) => r.correct).length
+    const total = soalanList.length
+    const peratus = Math.round((betul / total) * 100)
+    const emoji = peratus >= 80 ? '🌟' : peratus >= 50 ? '👍' : '💪'
+    const peratusColor = peratus >= 80 ? 'text-emerald-500' : peratus >= 50 ? 'text-sky-500' : 'text-orange-500'
+
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <div className="bg-gradient-to-br from-pink-700 via-pink-600 to-rose-500 px-5 pt-14 pb-16 text-center">
+          <div className="text-6xl mb-3">{emoji}</div>
+          <h1 className="text-2xl font-bold text-white mb-1">Sesi Selesai!</h1>
+          <p className="text-pink-100 text-sm">{anak?.name} dah habiskan {total} soalan hari ni.</p>
+        </div>
+
+        <div className="max-w-lg mx-auto px-4 -mt-8 pb-8 w-full">
+          {/* Score card */}
+          <div className="bg-white rounded-3xl shadow-sm border border-pink-100 p-6 mb-4">
+            <div className="flex justify-around items-center">
+              <div className="text-center">
+                <p className="text-4xl font-black text-emerald-500">{betul}</p>
+                <p className="text-xs text-slate-400 mt-1 font-medium">Betul ✓</p>
+              </div>
+              <div className="w-px h-12 bg-slate-100" />
+              <div className="text-center">
+                <p className="text-4xl font-black text-slate-300">{total - betul}</p>
+                <p className="text-xs text-slate-400 mt-1 font-medium">Perlu Latihan</p>
+              </div>
+              <div className="w-px h-12 bg-slate-100" />
+              <div className="text-center">
+                <p className={`text-4xl font-black ${peratusColor}`}>{peratus}%</p>
+                <p className="text-xs text-slate-400 mt-1 font-medium">Markah</p>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="mt-5 h-3 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className={`h-3 rounded-full transition-all duration-1000
+                  ${peratus >= 80 ? 'bg-emerald-400' : peratus >= 50 ? 'bg-sky-400' : 'bg-orange-400'}`}
+                style={{ width: `${peratus}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Mesej */}
+          <div className={`rounded-2xl p-4 text-sm text-center mb-6 font-medium
+            ${peratus >= 80 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+              : peratus >= 50 ? 'bg-sky-50 text-sky-700 border border-sky-200'
+              : 'bg-orange-50 text-orange-700 border border-orange-200'}`}>
+            {peratus >= 80
+              ? `Tahniah! ${anak?.name} dah faham bahagian ni. 🎉`
+              : peratus >= 50
+              ? `${anak?.name} dalam proses — sambung lagi esok! 💪`
+              : `${anak?.name} perlu lebih latihan — ulang topik asas dulu. 📚`}
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => router.push(`/pilih-sesi?anak=${anakId}`)}
+              className="w-full bg-gradient-to-r from-violet-600 to-indigo-700 text-white font-bold
+                         rounded-2xl py-4 shadow-md shadow-slate-300 hover:opacity-90 active:scale-95 transition-all"
+            >
+              Sesi Baru →
+            </button>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="w-full bg-white border border-slate-200 text-slate-600 font-semibold
+                         rounded-2xl py-3.5 text-sm hover:bg-slate-50 active:scale-95 transition-all"
+            >
+              Kembali ke Laman Utama
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Main UI ──────────────────────────────────────────────────────────────────
+
+  const soalan = soalanList[soalanIdx]
+  const namaAnak = anak?.name || 'Anak'
+  const totalSoalan = soalanList.length
+  const cfg = LAYER_CONFIG[layer]
+  const progressPct = Math.round((soalanIdx / totalSoalan) * 100)
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+
+      {/* Top bar */}
+      <div className="bg-white border-b border-slate-100 px-4 pt-10 pb-3 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-lg mx-auto">
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="text-slate-400 text-sm hover:text-slate-600 flex items-center gap-1"
+            >
+              ✕ <span className="text-xs">Berhenti</span>
+            </button>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-full text-white ${cfg.badge}`}>
+                {cfg.emoji} {cfg.label}
+              </span>
+            </div>
+            <div className="text-sm text-slate-500 font-semibold">
+              {soalanIdx + 1}<span className="text-slate-300">/{totalSoalan}</span>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-2 bg-gradient-to-r from-[#BE185D] to-rose-500 rounded-full transition-all duration-700"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Layer stepper + content */}
+      <div className="max-w-lg mx-auto px-4 py-5 flex-1 w-full">
+        <LayerStepper currentLayer={layer} />
+
+        {layer === 1 && <Layer1 soalan={soalan} namaAnak={namaAnak} onFaham={handleFahamLayer} />}
+        {layer === 2 && <Layer2 soalan={soalan} namaAnak={namaAnak} onFaham={handleFahamLayer} />}
+        {layer === 3 && (
+          <Layer3
+            soalan={soalan}
+            namaAnak={namaAnak}
+            cubaan={cubaan}
+            onBetul={handleBetul}
+            onHampirBetul={handleHampirBetul}
+          />
+        )}
+      </div>
+
+    </div>
+  )
+}
+
+export default function SesiPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-900 rounded-full animate-spin" />
+      </div>
+    }>
+      <SesiContent />
+    </Suspense>
+  )
+}

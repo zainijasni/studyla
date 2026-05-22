@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\Dell\\\\Desktop\\\\studyla\\\\docs\")",
+      "PowerShell(Move-Item \"C:\\\\Users\\\\Dell\\\\Desktop\\\\studyla-temp-docs\\\\master-content.md\" \"C:\\\\Users\\\\Dell\\\\Desktop\\\\studyla\\\\docs\\\\\")",
+      "PowerShell(Move-Item \"C:\\\\Users\\\\Dell\\\\Desktop\\\\studyla-temp-docs\\\\belajarbersama-master-content.md\" \"C:\\\\Users\\\\Dell\\\\Desktop\\\\studyla\\\\docs\\\\\")",
+      "PowerShell(Move-Item \"C:\\\\Users\\\\Dell\\\\Desktop\\\\studyla-temp-docs\\\\README.md\" \"C:\\\\Users\\\\Dell\\\\Desktop\\\\studyla\\\\\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\Dell\\\\Desktop\\\\studyla\\\\src\\\\lib\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\Dell\\\\Desktop\\\\studyla\\\\src\\\\components\\\\ui\")",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3001)",
+      "Bash(Stop-Process -Id 8492 -Force)",
+      "Bash(Start-Sleep -Seconds 2)",
+      "Bash(Write-Host \"Server stopped\")",
+      "Bash(kill -9 8492)",
+      "Read(//mnt/c/Users/Dell/Desktop/**)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:3001 -o /dev/null -w \"%{http_code}\")",
+      "Bash(curl -s -X POST http://localhost:3001/api/generate-question -H 'Content-Type: application/json' -d '{\"subject\":\"sains\",\"topic\":\"ekosistem\",\"year\":\"4\"}')",
+      "Bash(mkdir -p \"/mnt/c/Users/Dell/Desktop/studyla/src/app/tetapan\" 2>/dev/null; ls \"/mnt/c/Users/Dell/Desktop/studyla/src/app/\" 2>/dev/null || echo \"check windows path\")",
+      "Bash(git remote *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}
