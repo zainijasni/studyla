@@ -327,7 +327,7 @@ function SesiContent() {
 
       // ── Kira pool soalan untuk topik+tahun ini ──────────────────────────────
       const POOL_TARGET = 300   // bila pool cukup, recycle je — tak generate lagi
-      const MIN_POOL    = 9     // minimum layer-1 rows = 3 soalan penuh sebelum serve dari pool
+      const MIN_POOL    = 3     // 1 AI call untuk seed (3 soalan = 9 rows), lepas tu serve dari pool
 
       const { count: poolCount } = await supabase
         .from('questions')
@@ -336,7 +336,29 @@ function SesiContent() {
         .eq('layer', 1).eq('is_approved', true)
 
       const pool = poolCount || 0
-      const needGenerate = pool < MIN_POOL   // pool kosong atau terlalu sikit
+      const hasPool = pool >= MIN_POOL
+
+      // Cooldown check — kalau ada soalan baru dalam 5 minit, jangan generate lagi
+      // Ini prevent ramai user concurrent trigger AI untuk topik yang sama
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+      const { count: recentCount } = await supabase
+        .from('questions')
+        .select('*', { count: 'exact', head: true })
+        .eq('subject', subjek).eq('topic', topik).eq('year', tahun)
+        .eq('layer', 1).gte('created_at', fiveMinAgo)
+
+      const recentlyGenerated = (recentCount || 0) > 0
+      // Generate hanya kalau: pool < MIN_POOL DAN tiada generation dalam 5 minit lepas
+      const needGenerate = !hasPool && !recentlyGenerated
+
+      // ── Cooldown active tapi pool masih kosong — tunggu sekejap ─────────────
+      // (user lain sedang generate, bagi masa dia save dulu)
+      if (!needGenerate && !hasPool && recentlyGenerated) {
+        await new Promise(r => setTimeout(r, 4000))
+        // Reload page supaya dapat soalan yang baru disave
+        window.location.reload()
+        return
+      }
 
       // ── Serve dari pool (pool cukup) ────────────────────────────────────────
       if (!needGenerate) {
