@@ -40,8 +40,13 @@ export default function LandingPage() {
       {/* ── Nav ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-4xl mx-auto px-5 h-14 flex items-center justify-between">
-          <div className="bg-gradient-to-r from-violet-800 to-indigo-800 rounded-xl px-2.5 py-1.5">
-            <img src="/logo.png" alt="StudyLa" className="h-5 object-contain" />
+          <div className="flex items-center gap-2.5">
+            <div className="bg-gradient-to-r from-violet-800 to-indigo-800 rounded-xl p-1.5">
+              <img src="/logo.png" alt="StudyLa" className="h-7 object-contain" />
+            </div>
+            <span className="font-black text-xl text-slate-800 tracking-tight">
+              study<span className="text-violet-700">la</span>
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/login"

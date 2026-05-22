@@ -88,7 +88,15 @@ export default function DashboardPage() {
           <div className="relative">
             {/* Logo + Log keluar row */}
             <div className="flex items-center justify-between mb-5">
-              <img src="/logo.png" alt="StudyLa" className="h-7 md:h-8 object-contain" />
+              <div className="flex items-center gap-2.5">
+                <img src="/logo.png" alt="StudyLa" className="h-10 md:h-11 object-contain" />
+                <div>
+                  <p className="text-white font-black text-xl md:text-2xl leading-none tracking-tight">
+                    study<span className="text-violet-300">la</span>
+                  </p>
+                  <p className="text-violet-300/80 text-[10px] font-medium mt-0.5">Platform Belajar Keluarga</p>
+                </div>
+              </div>
               <button
                 onClick={() => supabase.auth.signOut().then(() => router.push('/login'))}
                 className="flex items-center gap-1.5 border border-white/30 text-white/80 text-xs
