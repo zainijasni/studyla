@@ -319,62 +319,102 @@ function SesiContent() {
 
   useEffect(() => {
     async function loadSesi() {
+      // ── Ambil maklumat anak ─────────────────────────────────────────────────
       const { data: childData } = await supabase
         .from('children').select('*').eq('id', anakId).single()
       if (!childData) { router.push('/dashboard'); return }
       setAnak(childData)
 
-      const { data: rows } = await supabase
+      // ── Kira pool soalan untuk topik+tahun ini ──────────────────────────────
+      const POOL_TARGET = 300   // bila pool cukup, recycle je — tak generate lagi
+      const MIN_POOL    = 9     // minimum layer-1 rows = 3 soalan penuh sebelum serve dari pool
+
+      const { count: poolCount } = await supabase
         .from('questions')
-        .select('*')
-        .eq('subject', subjek)
-        .eq('topic', topik)
-        .eq('year', tahun)
-        .eq('is_approved', true)
-        .order('created_at', { ascending: false })
-        .limit(150) // ambil 150 rows = ~16 soalan (9 rows per soalan)
+        .select('*', { count: 'exact', head: true })
+        .eq('subject', subjek).eq('topic', topik).eq('year', tahun)
+        .eq('layer', 1).eq('is_approved', true)
 
-      if (!rows || rows.length === 0) {
-        setGenerating(true)
+      const pool = poolCount || 0
+      const needGenerate = pool < MIN_POOL   // pool kosong atau terlalu sikit
+
+      // ── Serve dari pool (pool cukup) ────────────────────────────────────────
+      if (!needGenerate) {
+        // Random offset supaya user tak dapat soalan sama tiap sesi
+        // Setiap fetch ambil 60 rows (= ~6 soalan × 3 layers)
+        const maxOffset = Math.max(0, pool - 20) // layer-1 count; actual rows = pool × 3
+        const randomOffset = maxOffset > 0 ? Math.floor(Math.random() * maxOffset) * 3 : 0
+
+        const { data: rows } = await supabase
+          .from('questions')
+          .select('*')
+          .eq('subject', subjek).eq('topic', topik).eq('year', tahun)
+          .eq('is_approved', true)
+          .order('created_at', { ascending: randomOffset % 2 === 0 }) // tukar asc/desc secara random
+          .range(randomOffset, randomOffset + 59)
+
+        const grouped = groupSoalanByLayers(rows || [])
+        setSoalanList(grouped)
+
+        const { data: { user } } = await supabase.auth.getUser()
+        const { data: sesiRow } = await supabase.from('sessions')
+          .insert({ child_id: anakId, parent_id: user.id, subject: subjek, topic: topik, year: tahun, total_questions: grouped.length })
+          .select().single()
+        if (sesiRow) setSessionId(sesiRow.id)
         setLoading(false)
-        try {
-          const res = await fetch('/api/generate-question', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ subject: subjek, topic: topik, year: tahun }),
-          })
-          const genData = await res.json()
-          if (!genData.success) throw new Error(genData.error || 'Gagal jana soalan')
-
-          const { data: newRows } = await supabase
-            .from('questions').select('*')
-            .eq('subject', subjek).eq('topic', topik).eq('is_approved', true)
-            .order('layer', { ascending: true })
-
-          if (newRows && newRows.length > 0) {
-            const grouped = groupSoalanByLayers(newRows)
-            setSoalanList(grouped)
-            const { data: { user } } = await supabase.auth.getUser()
-            const { data: session } = await supabase.from('sessions')
-              .insert({ child_id: anakId, parent_id: user.id, subject: subjek, topic: topik, year: tahun, total_questions: grouped.length })
-              .select().single()
-            if (session) setSessionId(session.id)
-          }
-        } catch (err) {
-          setGenerateError(err.message || 'Gagal jana soalan. Cuba lagi.')
-        }
-        setGenerating(false)
         return
       }
 
-      const grouped = groupSoalanByLayers(rows)
-      setSoalanList(grouped)
-      const { data: { user } } = await supabase.auth.getUser()
-      const { data: session } = await supabase.from('sessions')
-        .insert({ child_id: anakId, parent_id: user.id, subject: subjek, topic: topik, year: tahun, total_questions: grouped.length })
-        .select().single()
-      if (session) setSessionId(session.id)
+      // ── Generate dari AI (pool terlalu sikit) ───────────────────────────────
+      // Jangan generate kalau pool dah penuh (walaupun MIN_POOL belum tercapai sebab filter lain)
+      if (pool >= POOL_TARGET) {
+        // Edge case: pool penuh tapi tahun ini tak cukup — serve apa ada
+        const { data: rows } = await supabase.from('questions').select('*')
+          .eq('subject', subjek).eq('topic', topik).eq('year', tahun).eq('is_approved', true).limit(60)
+        const grouped = groupSoalanByLayers(rows || [])
+        setSoalanList(grouped)
+        const { data: { user } } = await supabase.auth.getUser()
+        const { data: sesiRow } = await supabase.from('sessions')
+          .insert({ child_id: anakId, parent_id: user.id, subject: subjek, topic: topik, year: tahun, total_questions: grouped.length })
+          .select().single()
+        if (sesiRow) setSessionId(sesiRow.id)
+        setLoading(false)
+        return
+      }
+
+      // Generate baru
+      setGenerating(true)
       setLoading(false)
+      try {
+        const res = await fetch('/api/generate-question', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subject: subjek, topic: topik, year: tahun }),
+        })
+        const genData = await res.json()
+        if (!genData.success) throw new Error(genData.error || 'Gagal jana soalan')
+
+        // Ambil soalan baru yang baru digenerate
+        const { data: newRows } = await supabase
+          .from('questions').select('*')
+          .eq('subject', subjek).eq('topic', topik).eq('year', tahun)
+          .eq('is_approved', true)
+          .order('created_at', { ascending: false })
+          .limit(30) // 3 soalan × 3 layers baru
+
+        if (newRows && newRows.length > 0) {
+          const grouped = groupSoalanByLayers(newRows)
+          setSoalanList(grouped)
+          const { data: { user } } = await supabase.auth.getUser()
+          const { data: sesiRow } = await supabase.from('sessions')
+            .insert({ child_id: anakId, parent_id: user.id, subject: subjek, topic: topik, year: tahun, total_questions: grouped.length })
+            .select().single()
+          if (sesiRow) setSessionId(sesiRow.id)
+        }
+      } catch (err) {
+        setGenerateError(err.message || 'Gagal jana soalan. Cuba lagi.')
+      }
+      setGenerating(false)
     }
     loadSesi()
   }, [anakId, subjek, topik, tahun, router])
