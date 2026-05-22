@@ -4,6 +4,22 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
+// ─── Label maps ──────────────────────────────────────────────────────────────
+
+const SUBJEK_LABEL = {
+  'matematik':         { label: 'Matematik',       emoji: '🔢' },
+  'bahasa-melayu':     { label: 'Bahasa Melayu',   emoji: '✍️' },
+  'bahasa-inggeris':   { label: 'Bahasa Inggeris', emoji: '🔤' },
+  'sains':             { label: 'Sains',            emoji: '🔬' },
+}
+
+const TOPIK_LABEL = {
+  'nombor-bulat':'Nombor Bulat & Nilai Tempat','tambah-tolak':'Tambah dan Tolak','darab-bahagi':'Darab dan Bahagi','wang':'Wang & Kewangan','masa-waktu':'Masa dan Waktu','ukuran':'Panjang, Jisim & Isipadu','pecahan':'Pecahan','perpuluhan':'Perpuluhan','peratus':'Peratus','luas-perimeter':'Luas dan Perimeter','data-graf':'Data dan Graf','nisbah':'Nisbah dan Kadaran',
+  'ejaan-bm':'Ejaan & Sebutan','tatabahasa-asas':'Kata Nama & Kata Kerja','tatabahasa-lanjut':'Kata Adjektif & Kata Hubung','pemahaman':'Pemahaman & Inferens','karangan':'Karangan Bergambar','simpulan-bahasa':'Simpulan Bahasa & Peribahasa','karangan-fakta':'Karangan Fakta & Imaginatif','ayat-majmuk':'Ayat Majmuk & Penjodoh',
+  'vocabulary':'Vocabulary in Context','phonics-spelling':'Phonics & Spelling','grammar-basic':'Grammar — Nouns & Verbs','grammar-tenses':'Grammar — Tenses','reading-comprehension':'Reading Comprehension','writing':'Guided Writing','grammar-advanced':'Grammar — Sentence Structure','letter-writing':'Informal Letter Writing',
+  'deria':'Deria & Fungsinya','haiwan':'Haiwan & Kepelbagaian Hayat','tumbuhan':'Tumbuhan & Proses Hidup','cuaca':'Cuaca & Alam Sekitar','jirim':'Jirim — Pepejal, Cecair, Gas','manusia-badan':'Sistem Badan Manusia','cahaya-bunyi':'Cahaya dan Bunyi','daya-gerak':'Daya dan Gerakan','ekosistem':'Ekosistem & Rantai Makanan','bumi-sumber':'Bumi & Sumber Asli',
+}
+
 // ─── Layer config (warna berbeza tiap layer) ────────────────────────────────
 
 const LAYER_CONFIG = {
@@ -497,14 +513,20 @@ function SesiContent() {
     const peratus = Math.round((betulCount / total) * 100)
     const status = peratus >= 80 ? 'mastered' : peratus >= 50 ? 'progressing' : 'struggling'
 
-    if (sessionId) {
-      await supabase.from('sessions').update({ completed: true, correct_count: betulCount }).eq('id', sessionId)
+    // Wrap all DB ops — if any fail, we still show the selesai screen
+    try {
+      if (sessionId) {
+        await supabase.from('sessions').update({ completed: true, correct_count: betulCount }).eq('id', sessionId)
+      }
+      await supabase.from('topic_progress').upsert({
+        child_id: anakId, subject: subjek, topic: topik, year: tahun, status,
+        last_session_at: new Date().toISOString(),
+      }, { onConflict: 'child_id,subject,topic' })
+      await supabase.rpc('increment_topic_sessions', { p_child_id: anakId, p_subject: subjek, p_topic: topik }).catch(() => {})
+    } catch (err) {
+      console.error('finishSession DB error (non-fatal):', err)
     }
-    await supabase.from('topic_progress').upsert({
-      child_id: anakId, subject: subjek, topic: topik, year: tahun, status,
-      last_session_at: new Date().toISOString(),
-    }, { onConflict: 'child_id,subject,topic' })
-    await supabase.rpc('increment_topic_sessions', { p_child_id: anakId, p_subject: subjek, p_topic: topik }).catch(() => {})
+    // Always show completion screen regardless of DB errors
     setSelesai(true)
   }
 
@@ -665,6 +687,8 @@ function SesiContent() {
   const totalSoalan = soalanList.length
   const cfg = LAYER_CONFIG[layer]
   const progressPct = Math.round(((soalanIdx + (layer - 1) / 3) / totalSoalan) * 100)
+  const subjekInfo = SUBJEK_LABEL[subjek] || { label: subjek, emoji: '📚' }
+  const topikLabel = TOPIK_LABEL[topik] || topik
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -702,6 +726,11 @@ function SesiContent() {
               style={{ width: `${progressPct}%` }}
             />
           </div>
+
+          {/* Subject + topic label */}
+          <p className="text-white/50 text-[10px] mt-1.5 font-medium truncate">
+            {subjekInfo.emoji} {subjekInfo.label} · {topikLabel}
+          </p>
         </div>
       </div>
 
