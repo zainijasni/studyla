@@ -172,23 +172,43 @@ function LaporanContent() {
   const [openSubjek, setOpenSubjek]     = useState(null)
 
   useEffect(() => {
-    async function loadChildren() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-      setUser(user)
-      const { data } = await supabase.from('children').select('*').order('created_at', { ascending: true })
-      if (!data || data.length === 0) { router.push('/dashboard'); return }
-      setChildren(data)
-      const target = anakParam ? data.find(c => c.id === anakParam) : null
-      setSelectedChild(target || data[0])
-    }
-    loadChildren()
-  }, [router, anakParam])
+    async function init() {
+      // getSession() reads local storage — no network call, instant
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) { router.push('/login'); return }
+      setUser(session.user)
 
-  useEffect(() => {
-    if (!selectedChild) return
-    loadChildData(selectedChild.id)
-  }, [selectedChild])
+      if (anakParam) {
+        // Fetch children + child data all in parallel (2 round trips total)
+        const [{ data: childrenData }, { data: progressData }, { data: sessionsData }] = await Promise.all([
+          supabase.from('children').select('*').order('created_at', { ascending: true }),
+          supabase.from('topic_progress').select('*').eq('child_id', anakParam).order('updated_at', { ascending: false }),
+          supabase.from('sessions').select('*').eq('child_id', anakParam).eq('completed', true).order('created_at', { ascending: false }).limit(50),
+        ])
+        if (!childrenData?.length) { router.push('/dashboard'); return }
+        setChildren(childrenData)
+        setSelectedChild(childrenData.find(c => c.id === anakParam) || childrenData[0])
+        setProgress(progressData || [])
+        setSessions(sessionsData || [])
+      } else {
+        // Fetch children first, then child data in parallel
+        const { data: childrenData } = await supabase.from('children').select('*').order('created_at', { ascending: true })
+        if (!childrenData?.length) { router.push('/dashboard'); return }
+        setChildren(childrenData)
+        const firstChild = childrenData[0]
+        setSelectedChild(firstChild)
+        const [{ data: progressData }, { data: sessionsData }] = await Promise.all([
+          supabase.from('topic_progress').select('*').eq('child_id', firstChild.id).order('updated_at', { ascending: false }),
+          supabase.from('sessions').select('*').eq('child_id', firstChild.id).eq('completed', true).order('created_at', { ascending: false }).limit(50),
+        ])
+        setProgress(progressData || [])
+        setSessions(sessionsData || [])
+      }
+
+      setLoading(false)
+    }
+    init()
+  }, [router, anakParam])
 
   async function loadChildData(childId) {
     setLoading(true)
@@ -252,7 +272,7 @@ function LaporanContent() {
               {children.map((child, idx) => {
                 const isSelected = selectedChild?.id === child.id
                 return (
-                  <button key={child.id} onClick={() => setSelectedChild(child)}
+                  <button key={child.id} onClick={() => { setSelectedChild(child); loadChildData(child.id) }}
                     className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all
                       ${isSelected ? 'bg-gradient-to-r from-violet-800 to-indigo-800 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
                     <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${AVATAR_COLORS[idx % AVATAR_COLORS.length]} flex items-center justify-center text-white text-xs font-bold`}>

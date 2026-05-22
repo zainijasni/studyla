@@ -29,7 +29,8 @@ export default function TetapanPage() {
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) { router.push('/login'); return }
       setUser(user)
       setNama(user.user_metadata?.full_name || '')

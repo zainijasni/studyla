@@ -76,7 +76,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     async function init() {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session: initSession } } = await supabase.auth.getSession()
+      const user = initSession?.user
       if (!user) { router.push('/login'); return }
       if (user.email !== ADMIN_EMAIL) { router.push('/dashboard'); return }
       await loadData()

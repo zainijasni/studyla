@@ -18,7 +18,8 @@ export default function TambahProfilAnakPage() {
     setLoading(true)
     setError('')
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
     if (!user) { router.push('/login'); return }
 
     const { error } = await supabase.from('children').insert({

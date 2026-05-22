@@ -319,6 +319,11 @@ function SesiContent() {
 
   useEffect(() => {
     async function loadSesi() {
+      // ── Auth (local cache — no network) ────────────────────────────────────
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
+      if (!user) { router.push('/login'); return }
+
       // ── Ambil maklumat anak ─────────────────────────────────────────────────
       const { data: childData } = await supabase
         .from('children').select('*').eq('id', anakId).single()
@@ -378,7 +383,6 @@ function SesiContent() {
         const grouped = groupSoalanByLayers(rows || [])
         setSoalanList(grouped)
 
-        const { data: { user } } = await supabase.auth.getUser()
         const { data: sesiRow } = await supabase.from('sessions')
           .insert({ child_id: anakId, parent_id: user.id, subject: subjek, topic: topik, year: tahun, total_questions: grouped.length })
           .select().single()
@@ -395,7 +399,6 @@ function SesiContent() {
           .eq('subject', subjek).eq('topic', topik).eq('year', tahun).eq('is_approved', true).limit(60)
         const grouped = groupSoalanByLayers(rows || [])
         setSoalanList(grouped)
-        const { data: { user } } = await supabase.auth.getUser()
         const { data: sesiRow } = await supabase.from('sessions')
           .insert({ child_id: anakId, parent_id: user.id, subject: subjek, topic: topik, year: tahun, total_questions: grouped.length })
           .select().single()
