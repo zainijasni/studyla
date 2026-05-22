@@ -21,7 +21,7 @@ export default function DaftarPage() {
     if (password.length < 6) { setError('Kata laluan mesti sekurang-kurangnya 6 aksara.'); setLoading(false); return }
     const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } })
     if (error) { setError(error.message); setLoading(false); return }
-    router.push('/dashboard')
+    router.push('/onboarding')
   }
 
   return (
