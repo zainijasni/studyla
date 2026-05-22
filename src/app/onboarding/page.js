@@ -65,23 +65,23 @@ export default function OnboardingPage() {
     <div className="h-screen bg-slate-50 flex flex-col overflow-hidden">
 
       {/* Top progress */}
-      <div className="bg-white border-b border-slate-100 px-5 pt-10 pb-3 flex-shrink-0">
+      <div className="bg-gradient-to-r from-violet-800 to-indigo-900 px-5 pt-10 pb-4 flex-shrink-0">
         <div className="max-w-lg mx-auto">
-          <div className="flex items-center justify-between mb-2">
-            <img src="/logo.png" alt="StudyLa" className="h-6 object-contain" />
+          <div className="flex items-center justify-between mb-3">
+            <img src="/logo.png" alt="StudyLa" className="h-7 object-contain" />
             {step > 0 && (
               <button onClick={() => router.push('/dashboard')}
-                className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+                className="text-xs text-white/60 hover:text-white transition-colors border border-white/20 px-3 py-1.5 rounded-lg">
                 Langkau
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-3">
-            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full transition-all duration-500"
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
+              <div className="h-full bg-white rounded-full transition-all duration-500"
                 style={{ width: `${pct}%` }} />
             </div>
-            <span className="text-[10px] text-slate-400 font-medium flex-shrink-0">{step + 1}/{totalSteps}</span>
+            <span className="text-[10px] text-white/60 font-medium flex-shrink-0">{step + 1}/{totalSteps}</span>
           </div>
         </div>
       </div>
