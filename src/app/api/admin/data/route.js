@@ -4,7 +4,6 @@ import { NextResponse } from 'next/server'
 const ADMIN_EMAIL = 'zaini.jasni@gmail.com'
 
 export async function GET(request) {
-  // Auth check — guna anon client utk verify caller
   const supabaseAuth = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -20,13 +19,11 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Guna service role untuk bypass RLS
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
 
-  // Ambil semua data serentak
   const [
     { data: { users: authUsers } },
     { data: children },
@@ -34,19 +31,20 @@ export async function GET(request) {
     { data: questions },
   ] = await Promise.all([
     admin.auth.admin.listUsers({ perPage: 1000 }),
-    admin.from('children').select('id, name, year, user_id, created_at').order('created_at', { ascending: false }),
+    // FIX: kolum ialah parent_id, bukan user_id
+    admin.from('children').select('id, name, year, parent_id, created_at').order('created_at', { ascending: false }),
     admin.from('sessions').select('id, child_id, subject, topic, correct_count, total_questions, created_at, completed').eq('completed', true).order('created_at', { ascending: false }).limit(100),
-    admin.from('questions').select('id, subject, topic, year, created_at').order('created_at', { ascending: false }).limit(500),
+    // Ambil soalan dengan teks penuh, layer 1 sahaja (1 row per soalan)
+    admin.from('questions').select('id, subject, topic, year, layer, question_text, question_breakdown, answer_steps, answer, parent_script, created_at').eq('layer', 1).order('created_at', { ascending: false }).limit(300),
   ])
 
-  // Map children & sessions ke user
-  const childrenByUser = (children || []).reduce((acc, c) => {
-    if (!acc[c.user_id]) acc[c.user_id] = []
-    acc[c.user_id].push(c)
+  // Map children & sessions ke parent
+  const childrenByParent = (children || []).reduce((acc, c) => {
+    if (!acc[c.parent_id]) acc[c.parent_id] = []
+    acc[c.parent_id].push(c)
     return acc
   }, {})
 
-  const childIds = (children || []).map(c => c.id)
   const sessionsByChild = (sessions || []).reduce((acc, s) => {
     if (!acc[s.child_id]) acc[s.child_id] = []
     acc[s.child_id].push(s)
@@ -55,7 +53,7 @@ export async function GET(request) {
 
   // Build user list
   const users = (authUsers || []).map(u => {
-    const kids = childrenByUser[u.id] || []
+    const kids = childrenByParent[u.id] || []
     const kidSessions = kids.flatMap(k => sessionsByChild[k.id] || [])
     return {
       id: u.id,
@@ -69,22 +67,34 @@ export async function GET(request) {
     }
   }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
+  // Stock soalan per subject+topic+year
+  const { data: stockRaw } = await admin.rpc('count_questions_by_topic').catch(() => ({ data: null }))
+
+  // Fallback: manual count dari questions layer 1
+  const allQ = questions || []
+  const stockMap = {}
+  // Get ALL layer-1 counts grouped by subject+topic+year
+  const { data: allLayer1 } = await admin.from('questions').select('subject, topic, year').eq('layer', 1)
+  ;(allLayer1 || []).forEach(q => {
+    const key = `${q.subject}|${q.topic}|${q.year}`
+    stockMap[key] = (stockMap[key] || 0) + 1
+  })
+
   // Stats
   const totalQ = (sessions || []).reduce((a, s) => a + (s.total_questions || 0), 0)
   const totalBetul = (sessions || []).reduce((a, s) => a + (s.correct_count || 0), 0)
 
-  // Soalan count per subject
-  const qBySubject = (questions || []).reduce((acc, q) => {
+  const qBySubject = allQ.reduce((acc, q) => {
     acc[q.subject] = (acc[q.subject] || 0) + 1
     return acc
   }, {})
 
-  // Recent sessions enriched dengan child name
+  // Recent sessions enriched
   const childMap = (children || []).reduce((acc, c) => { acc[c.id] = c; return acc }, {})
   const userMap = users.reduce((acc, u) => { acc[u.id] = u; return acc }, {})
   const recentSessions = (sessions || []).slice(0, 50).map(s => {
     const child = childMap[s.child_id]
-    const parentUser = child ? userMap[child.user_id] : null
+    const parentUser = child ? userMap[child.parent_id] : null
     return {
       ...s,
       child_name: child?.name || '-',
@@ -98,12 +108,13 @@ export async function GET(request) {
       total_users: users.length,
       total_children: (children || []).length,
       total_sessions: (sessions || []).length,
-      total_questions: (questions || []).length,
+      total_questions: (allLayer1 || []).length,
       accuracy: totalQ > 0 ? Math.round((totalBetul / totalQ) * 100) : 0,
     },
     users,
     recentSessions,
-    questions: (questions || []).slice(0, 100),
+    questions: allQ,      // layer 1 questions with full text, latest 300
     qBySubject,
+    stockMap,             // { "matematik|pecahan|3": 15, ... }
   })
 }

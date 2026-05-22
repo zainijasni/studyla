@@ -329,8 +329,10 @@ function SesiContent() {
         .select('*')
         .eq('subject', subjek)
         .eq('topic', topik)
+        .eq('year', tahun)
         .eq('is_approved', true)
-        .order('layer', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(150) // ambil 150 rows = ~16 soalan (9 rows per soalan)
 
       if (!rows || rows.length === 0) {
         setGenerating(true)
