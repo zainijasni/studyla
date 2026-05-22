@@ -202,6 +202,7 @@ export default function LandingPage() {
       <div className="bg-slate-900 py-6 px-5 text-center">
         <img src="/logo.png" alt="StudyLa" className="h-6 object-contain mx-auto mb-3 opacity-60" />
         <p className="text-xs text-slate-500">© 2025 StudyLa. Platform belajar untuk keluarga Malaysia.</p>
+        <p className="text-xs text-slate-600 mt-1">Dimiliki dan dibangunkan oleh <span className="text-slate-400 font-semibold">DCK Tech</span></p>
         <p className="text-xs text-slate-600 mt-1">Tahun 1–5 · Matematik · Bahasa Melayu · Bahasa Inggeris · Sains</p>
       </div>
 
