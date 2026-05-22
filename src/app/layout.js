@@ -1,5 +1,6 @@
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import RegisterSW from "@/components/RegisterSW";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -10,13 +11,26 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata = {
   title: "StudyLa — Fahamkan dulu, baru latih tubi",
   description: "Aplikasi bantu parent coach anak ulang kaji subjek sekolah rendah ikut KSSR Semakan 2017.",
-  themeColor: "#BE185D",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "StudyLa",
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  themeColor: "#BE185D",
 };
 
 export default function RootLayout({ children }) {
@@ -24,6 +38,7 @@ export default function RootLayout({ children }) {
     <html lang="ms" className={`${jakarta.variable} h-full antialiased`}>
       <body className={`${jakarta.className} min-h-full bg-slate-50 text-slate-900`}>
         {children}
+        <RegisterSW />
       </body>
     </html>
   );
