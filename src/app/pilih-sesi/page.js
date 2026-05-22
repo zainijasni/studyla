@@ -170,9 +170,9 @@ function PilihSesiContent() {
         </div>
       </div>
 
-      {/* Subject tabs — horizontal scroll */}
-      <div className="bg-white border-b border-slate-100 flex-shrink-0">
-        <div className="flex overflow-x-auto no-scrollbar px-4 py-2.5 gap-2">
+      {/* Subject grid — 2×2, all visible at once */}
+      <div className="bg-white border-b border-slate-100 flex-shrink-0 px-4 py-3">
+        <div className="grid grid-cols-2 gap-2 max-w-lg mx-auto">
           {Object.entries(SUBJEK_DATA).map(([id, s]) => {
             const isActive = subjekPilih === id
             const topikCount = s.topik.filter(t => t.tahunMin <= anak.year).length
@@ -180,16 +180,21 @@ function PilihSesiContent() {
             return (
               <button key={id}
                 onClick={() => { setSubjekPilih(id); setTopikPilih(null) }}
-                className={`flex-shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-bold transition-all
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.97]
                   ${isActive
                     ? `bg-gradient-to-r ${s.grad} text-white shadow-md`
-                    : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}>
-                <span>{s.emoji}</span>
-                <span>{s.label}</span>
-                {doneCount > 0 && (
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${isActive ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600'}`}>
-                    {doneCount}/{topikCount}
-                  </span>
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>
+                <span className="text-lg flex-shrink-0">{s.emoji}</span>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="text-xs font-bold leading-tight truncate">{s.label}</p>
+                  {doneCount > 0 && (
+                    <p className={`text-[10px] font-semibold mt-0.5 ${isActive ? 'text-white/80' : 'text-emerald-600'}`}>
+                      {doneCount}/{topikCount} faham
+                    </p>
+                  )}
+                </div>
+                {isActive && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />
                 )}
               </button>
             )
