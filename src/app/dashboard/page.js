@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
 
 const AVATAR_GRAD = [
   'from-rose-300 to-pink-400',
@@ -192,27 +193,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* Mobile bottom nav — fixed, with safe area for iPhone notch */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100
-                      shadow-lg z-30"
-           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex items-center justify-around">
-          {[
-            { label: 'Utama', href: '/dashboard', icon: '🏠' },
-            { label: 'Kemajuan', href: '/laporan', icon: '📊' },
-            { label: 'Tetapan', href: '/tetapan', icon: '⚙️' },
-          ].map(item => (
-            <button key={item.href} onClick={() => router.push(item.href)}
-              className={`flex flex-col items-center gap-0.5 py-3 flex-1 transition-colors
-                ${item.href === '/dashboard'
-                  ? 'text-violet-700'
-                  : 'text-slate-400 hover:text-violet-600'}`}>
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-[10px] font-semibold">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+      <BottomNav user={user} active="/dashboard" />
     </div>
   )
 }
