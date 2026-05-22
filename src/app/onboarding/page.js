@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -24,6 +24,13 @@ export default function OnboardingPage() {
   const [childId, setChildId] = useState(null)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
+
+  // Guard: must be logged in
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) router.push('/login')
+    })
+  }, [router])
 
   const totalSteps = STEPS.length
   const pct = Math.round(((step + 1) / totalSteps) * 100)

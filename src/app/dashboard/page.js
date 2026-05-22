@@ -27,8 +27,6 @@ export default function DashboardPage() {
       if (!user) { router.push('/login'); return }
       setUser(user)
       const { data } = await supabase.from('children').select('*').order('created_at', { ascending: true })
-      // First-time user — no children yet, send to onboarding
-      if (!data || data.length === 0) { router.push('/onboarding'); return }
       setChildren(data || [])
       setLoading(false)
     }

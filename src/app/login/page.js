@@ -19,7 +19,14 @@ export default function LoginPage() {
     setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError('Email atau kata laluan tidak betul.'); setLoading(false); return }
-    router.push('/dashboard')
+
+    // Check if user has children — new user goes to onboarding
+    const { data: kids } = await supabase.from('children').select('id').limit(1)
+    if (!kids || kids.length === 0) {
+      router.push('/onboarding')
+    } else {
+      router.push('/dashboard')
+    }
   }
 
   return (
