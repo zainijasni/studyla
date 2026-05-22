@@ -11,6 +11,7 @@ export default function BottomNav({ user, active }) {
   const items = [
     { label: 'Utama',    href: '/dashboard', icon: '🏠' },
     { label: 'Kemajuan', href: '/laporan',   icon: '📊' },
+    { label: 'Bantuan',  href: '/bantuan',   icon: '❓' },
     { label: 'Tetapan',  href: '/tetapan',   icon: '⚙️' },
     ...(isAdmin ? [{ label: 'Admin', href: '/admin', icon: '🛡️' }] : []),
   ]
