@@ -93,23 +93,24 @@ export default function TetapanPage() {
         <Sidebar user={user} />
       </div>
 
-      <main className="flex-1 md:ml-60">
+      <main className="flex-1 md:ml-60 flex flex-col min-h-screen">
 
         {/* Header */}
-        <div className="bg-gradient-to-br from-violet-800 via-purple-800 to-indigo-900 px-6 md:px-10 pt-12 pb-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-gradient-to-br from-violet-800 via-purple-800 to-indigo-900 px-5 md:px-10 pt-8 pb-6 md:pt-12 md:pb-8 flex-shrink-0">
+          <div className="flex items-center justify-between mb-5">
             <img src="/logo.png" alt="StudyLa" className="h-7 object-contain" />
             <button onClick={() => router.push('/dashboard')}
               className="text-white/60 hover:text-white text-xs border border-white/20
-                         px-3 py-1 rounded-lg transition-colors">
+                         px-3 py-1.5 rounded-lg transition-colors">
               ← Dashboard
             </button>
           </div>
-          <h1 className="text-white text-2xl font-bold">Tetapan</h1>
-          <p className="text-violet-300 text-sm mt-1">Urus akaun dan keutamaan anda.</p>
+          <h1 className="text-white text-xl md:text-2xl font-bold">Tetapan</h1>
+          <p className="text-violet-300 text-xs md:text-sm mt-1">Urus akaun dan keutamaan anda.</p>
         </div>
 
-        <div className="px-4 md:px-10 py-6 max-w-2xl space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 md:px-10 py-5 pb-24 md:pb-8">
+        <div className="max-w-2xl mx-auto space-y-4">
 
           {/* Info akaun */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -260,6 +261,7 @@ export default function TetapanPage() {
           </div>
 
         </div>
+        </div>
       </main>
 
       {/* Modal log keluar */}
@@ -288,21 +290,23 @@ export default function TetapanPage() {
       )}
 
       {/* Mobile bottom nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100
-                      flex items-center justify-around px-2 pb-safe shadow-lg z-20">
-        {[
-          { label: 'Utama', href: '/dashboard', icon: '🏠' },
-          { label: 'Kemajuan', href: '/laporan', icon: '📊' },
-          { label: 'Tetapan', href: '/tetapan', icon: '⚙️' },
-        ].map(item => (
-          <button key={item.href} onClick={() => router.push(item.href)}
-            className={`flex flex-col items-center gap-0.5 py-3 px-5 transition-colors
-              ${item.href === '/tetapan' ? 'text-violet-700' : 'text-slate-400 hover:text-violet-600'}`}>
-            <span className="text-xl">{item.icon}</span>
-            <span className="text-[10px] font-semibold">{item.label}</span>
-          </button>
-        ))}
-      </div>
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 shadow-lg z-30"
+           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="flex items-center justify-around">
+          {[
+            { label: 'Utama', href: '/dashboard', icon: '🏠' },
+            { label: 'Kemajuan', href: '/laporan', icon: '📊' },
+            { label: 'Tetapan', href: '/tetapan', icon: '⚙️' },
+          ].map(item => (
+            <button key={item.href} onClick={() => router.push(item.href)}
+              className={`flex flex-col items-center gap-0.5 py-3 flex-1 transition-colors
+                ${item.href === '/tetapan' ? 'text-violet-700' : 'text-slate-400 hover:text-violet-600'}`}>
+              <span className="text-xl">{item.icon}</span>
+              <span className="text-[10px] font-semibold">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   )
 }
