@@ -42,10 +42,13 @@ const NAV_ITEMS = [
   },
 ]
 
+const ADMIN_EMAIL = 'zaini.jasni@gmail.com'
+
 export default function Sidebar({ user }) {
   const router = useRouter()
   const pathname = usePathname()
   const parentName = user?.user_metadata?.full_name || 'Parent'
+  const isAdmin = user?.email === ADMIN_EMAIL
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -90,6 +93,25 @@ export default function Sidebar({ user }) {
           })}
         </div>
       </nav>
+
+      {/* Admin link — only visible to admin */}
+      {isAdmin && (
+        <div className="px-3 pb-1">
+          <button
+            onClick={() => router.push('/admin')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold
+              transition-all text-left
+              ${pathname === '/admin'
+                ? 'bg-rose-50 text-rose-600'
+                : 'text-slate-400 hover:bg-red-50 hover:text-rose-600'}`}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Panel Admin
+            <span className="ml-auto text-[9px] font-black bg-rose-100 text-rose-500 px-1.5 py-0.5 rounded-full">ADMIN</span>
+          </button>
+        </div>
+      )}
 
       {/* Premium upgrade card */}
       <div className="px-3 pb-4">
