@@ -80,7 +80,7 @@ function LayerStepper({ currentLayer }) {
                 : active ? `${cfg.bg} ${cfg.text} ring-1 ${cfg.border}`
                 : 'bg-slate-100 text-slate-400'}`}>
               <span className="text-sm leading-none">{done ? '✓' : emoji}</span>
-              <span className="truncate hidden sm:inline">{label}</span>
+              <span className="truncate">{label}</span>
             </div>
             {i < 2 && (
               <div className={`h-px w-3 mx-0.5 transition-colors duration-500
