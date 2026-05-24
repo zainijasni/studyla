@@ -473,8 +473,9 @@ function SesiContent() {
   function handleFahamLayer() { setLayer((p) => p + 1) }
 
   async function handleBetul() {
-    await saveResult(true)
-    nextSoalan(true)
+    const cubaanSemasa = cubaan  // capture before state changes
+    await saveResult(true, cubaanSemasa)
+    nextSoalan(true, cubaanSemasa)
   }
 
   async function handleHampirBetul() {
@@ -482,23 +483,24 @@ function SesiContent() {
     setLayer(2)
   }
 
-  async function saveResult(correct) {
+  async function saveResult(correct, cubaanVal) {
     const soalan = soalanList[soalanIdx]
     if (!sessionId || !soalan[1]) return
     await supabase.from('session_questions').insert({
       session_id: sessionId,
       question_id: soalan[1].id,
       layer_reached: 3,
-      stuck_at_layer: cubaan > 0 ? 3 : null,
-      attempts: cubaan + 1,
+      stuck_at_layer: cubaanVal > 0 ? 3 : null,
+      attempts: cubaanVal + 1,
       correct,
     })
-    setResults((prev) => [...prev, { correct, cubaan: cubaan + 1 }])
+    // fahamSendiri = betul pada cubaan pertama (tiada Cuba Lagi)
+    setResults((prev) => [...prev, { correct, cubaan: cubaanVal + 1, fahamSendiri: cubaanVal === 0 }])
   }
 
-  function nextSoalan(correct) {
+  function nextSoalan(correct, cubaanVal = 0) {
     if (soalanIdx + 1 >= soalanList.length) {
-      finishSession(correct)
+      finishSession(correct, cubaanVal)
     } else {
       setSoalanIdx((p) => p + 1)
       setLayer(1)
@@ -506,17 +508,26 @@ function SesiContent() {
     }
   }
 
-  async function finishSession(lastCorrect) {
-    const allResults = [...results, { correct: lastCorrect }]
-    const betulCount = allResults.filter((r) => r.correct).length
+  async function finishSession(lastCorrect, lastCubaan = 0) {
+    // Include last question result (state not yet updated from saveResult's setState)
+    const allResults = [...results, { correct: lastCorrect, cubaan: lastCubaan + 1, fahamSendiri: lastCubaan === 0 }]
     const total = soalanList.length
-    const peratus = Math.round((betulCount / total) * 100)
+
+    // "Faham Sendiri" = betul pada percubaan pertama — ukuran sebenar kefahaman
+    const fahamSendiriCount = allResults.filter(r => r.fahamSendiri).length
+    const denganBantuanCount = allResults.filter(r => r.correct && !r.fahamSendiri).length
+
+    // Status dikira berdasarkan % faham sendiri, bukan sekadar siap
+    const peratus = Math.round((fahamSendiriCount / total) * 100)
     const status = peratus >= 80 ? 'mastered' : peratus >= 50 ? 'progressing' : 'struggling'
 
     // Wrap all DB ops — if any fail, we still show the selesai screen
     try {
       if (sessionId) {
-        await supabase.from('sessions').update({ completed: true, correct_count: betulCount }).eq('id', sessionId)
+        await supabase.from('sessions').update({
+          completed: true,
+          correct_count: fahamSendiriCount,  // simpan bilangan faham sendiri
+        }).eq('id', sessionId)
       }
       await supabase.from('topic_progress').upsert({
         child_id: anakId, subject: subjek, topic: topik, year: tahun, status,
@@ -526,7 +537,6 @@ function SesiContent() {
     } catch (err) {
       console.error('finishSession DB error (non-fatal):', err)
     }
-    // Always show completion screen regardless of DB errors
     setSelesai(true)
   }
 
@@ -589,31 +599,30 @@ function SesiContent() {
   // ── Selesai ──────────────────────────────────────────────────────────────────
 
   if (selesai) {
-    const betul = results.filter((r) => r.correct).length
     const total = soalanList.length
-    const peratus = Math.round((betul / total) * 100)
+    const fahamSendiri = results.filter(r => r.fahamSendiri).length
+    const denganBantuan = results.filter(r => r.correct && !r.fahamSendiri).length
+    const peratus = Math.round((fahamSendiri / total) * 100)
     const isHebat = peratus >= 80
     const isOk = peratus >= 50
 
     // Track session count & check if feedback prompt should show
-    // Conditions: ≥5 sesi selesai DAN dah lawat laporan sekali — barulah user dah explore keseluruhan app
     const sessionCount = parseInt(localStorage.getItem('studyla_sessions_completed') || '0') + 1
     localStorage.setItem('studyla_sessions_completed', String(sessionCount))
     const sudahLawatLaporan = localStorage.getItem('studyla_laporan_visited') === 'true'
     const showFeedbackPrompt = sessionCount >= 5 && sudahLawatLaporan && localStorage.getItem('studyla_feedback_done') !== 'true'
-    const grade = isHebat ? { emoji: '🌟', label: 'Hebat!', grad: 'from-emerald-500 to-teal-600', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' }
-                : isOk    ? { emoji: '👍', label: 'Bagus!',  grad: 'from-sky-500 to-blue-600',     bg: 'bg-sky-50',     text: 'text-sky-700',     border: 'border-sky-200' }
-                :            { emoji: '💪', label: 'Cuba Lagi!', grad: 'from-orange-400 to-rose-500', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' }
+
+    const grade = isHebat ? { emoji: '🌟', label: 'Hebat!',      grad: 'from-emerald-500 to-teal-600',  bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' }
+                : isOk    ? { emoji: '👍', label: 'Bagus!',       grad: 'from-sky-500 to-blue-600',       bg: 'bg-sky-50',     text: 'text-sky-700',     border: 'border-sky-200' }
+                :            { emoji: '💪', label: 'Perlu Latih', grad: 'from-orange-400 to-rose-500',    bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200' }
 
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
         {/* Hero */}
         <div className={`bg-gradient-to-br ${grade.grad} px-5 pt-14 pb-20 text-center relative overflow-hidden`}>
-          {/* Decorative */}
           <div className="absolute top-4 left-6 text-white/10 text-5xl font-black">★</div>
           <div className="absolute top-8 right-10 text-white/10 text-3xl font-black">★</div>
           <div className="absolute bottom-8 left-12 text-white/10 text-4xl font-black">✦</div>
-
           <div className="text-7xl mb-3 relative">{grade.emoji}</div>
           <h1 className="text-2xl font-black text-white mb-1">{grade.label}</h1>
           <p className="text-white/70 text-sm">{anak?.name} — {total} soalan selesai</p>
@@ -622,48 +631,52 @@ function SesiContent() {
         <div className="max-w-lg mx-auto px-4 -mt-10 pb-8 w-full">
           {/* Score card */}
           <div className="bg-white rounded-3xl shadow-lg border border-slate-100 p-5 mb-4">
-            {/* Big score */}
+
+            {/* Big score — berdasarkan faham sendiri sahaja */}
             <div className="text-center mb-4 pb-4 border-b border-slate-100">
               <p className={`text-6xl font-black ${isHebat ? 'text-emerald-500' : isOk ? 'text-sky-500' : 'text-orange-500'}`}>
                 {peratus}%
               </p>
-              <p className="text-xs text-slate-400 mt-1 font-medium uppercase tracking-wide">Markah</p>
+              <p className="text-xs text-slate-400 mt-1 font-medium uppercase tracking-wide">Faham Sendiri</p>
             </div>
 
-            {/* Stats row */}
+            {/* Stats row — jujur: faham sendiri vs dengan bantuan */}
             <div className="flex justify-around items-center mb-4">
               <div className="text-center">
-                <p className="text-2xl font-black text-emerald-500">{betul}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5 font-medium">✓ Betul</p>
+                <p className="text-2xl font-black text-emerald-500">{fahamSendiri}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5 font-medium leading-tight">✅ Faham<br/>Sendiri</p>
               </div>
               <div className="w-px h-10 bg-slate-100" />
               <div className="text-center">
-                <p className="text-2xl font-black text-rose-400">{total - betul}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5 font-medium">✗ Perlu Latihan</p>
+                <p className="text-2xl font-black text-amber-400">{denganBantuan}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5 font-medium leading-tight">🔄 Dengan<br/>Bantuan</p>
               </div>
               <div className="w-px h-10 bg-slate-100" />
               <div className="text-center">
                 <p className="text-2xl font-black text-slate-600">{total}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Jumlah</p>
+                <p className="text-[10px] text-slate-400 mt-0.5 font-medium leading-tight">📋 Jumlah<br/>Soalan</p>
               </div>
             </div>
 
             {/* Progress bar */}
             <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className={`h-3 rounded-full bg-gradient-to-r ${grade.grad} transition-all duration-1000`}
-                style={{ width: `${peratus}%` }}
-              />
+              <div className={`h-3 rounded-full bg-gradient-to-r ${grade.grad} transition-all duration-1000`}
+                style={{ width: `${peratus}%` }} />
             </div>
+            <p className="text-[10px] text-slate-400 text-center mt-2">
+              {denganBantuan > 0
+                ? `${denganBantuan} soalan faham selepas dibimbing`
+                : 'Semua dijawab sendiri tanpa bantuan!'}
+            </p>
           </div>
 
           {/* Mesej motivasi */}
           <div className={`rounded-2xl px-4 py-3 text-sm text-center mb-5 font-medium ${grade.bg} ${grade.text} border ${grade.border}`}>
             {isHebat
-              ? `Tahniah! ${anak?.name} dah faham topik ini dengan baik. Teruskan! 🎉`
+              ? `Tahniah! ${anak?.name} faham topik ini tanpa banyak bantuan. Boleh teruskan ke topik baru! 🎉`
               : isOk
-              ? `${anak?.name} dalam proses — sambung lagi esok! 💪`
-              : `${anak?.name} perlu lebih latihan. Jangan putus asa, cuba lagi! 📚`}
+              ? `${anak?.name} dah ada asas — ulang topik ini sekali lagi untuk kukuhkan kefahaman. 💪`
+              : `${anak?.name} masih perlukan bimbingan. Cuba semula dari topik asas dulu. 📚`}
           </div>
 
           {/* Feedback prompt — shows after 3rd session if not submitted yet */}
