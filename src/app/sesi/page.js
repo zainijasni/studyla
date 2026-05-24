@@ -664,6 +664,22 @@ function SesiContent() {
               : `${anak?.name} perlu lebih latihan. Jangan putus asa, cuba lagi! 📚`}
           </div>
 
+          {/* Feedback prompt — shows after 3rd session if not submitted yet */}
+          {showFeedbackPrompt && (
+            <div className="bg-violet-50 border border-violet-200 rounded-2xl p-4 flex items-center gap-3 mb-2.5">
+              <span className="text-2xl flex-shrink-0">💜</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-violet-800 leading-tight">Boleh bagi pendapat sekejap?</p>
+                <p className="text-xs text-violet-500 mt-0.5">Ambil masa &lt;2 minit. Sangat membantu kami!</p>
+              </div>
+              <button
+                onClick={() => router.push('/feedback?from=sesi')}
+                className="flex-shrink-0 bg-violet-700 text-white text-xs font-bold px-3 py-2 rounded-xl active:scale-95 transition-all">
+                Isi →
+              </button>
+            </div>
+          )}
+
           <div className="space-y-2.5">
             <button
               onClick={() => router.push(`/pilih-sesi?anak=${anakId}`)}
@@ -680,22 +696,6 @@ function SesiContent() {
               Lihat Kemajuan 📊
             </button>
           </div>
-
-          {/* Feedback prompt — shows after 3rd session if not submitted yet */}
-          {showFeedbackPrompt && (
-            <div className="mt-4 bg-violet-50 border border-violet-200 rounded-2xl p-4 flex items-center gap-3">
-              <span className="text-2xl flex-shrink-0">💜</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-violet-800 leading-tight">Boleh bagi pendapat sekejap?</p>
-                <p className="text-xs text-violet-500 mt-0.5">Ambil masa &lt;2 minit. Sangat membantu kami!</p>
-              </div>
-              <button
-                onClick={() => router.push('/feedback?from=sesi')}
-                className="flex-shrink-0 bg-violet-700 text-white text-xs font-bold px-3 py-2 rounded-xl active:scale-95 transition-all">
-                Isi →
-              </button>
-            </div>
-          )}
         </div>
       </div>
     )
