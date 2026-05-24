@@ -36,23 +36,26 @@ export async function GET(request) {
     )
 
     // ── Fetch semua data — handle each independently ──────────────────────────
-    const [listResult, childResult, sessionResult, questionResult] = await Promise.all([
+    const [listResult, childResult, sessionResult, questionResult, feedbackResult] = await Promise.all([
       admin.auth.admin.listUsers({ perPage: 1000 }),
       admin.from('children').select('id, name, year, parent_id, created_at').order('created_at', { ascending: false }),
       admin.from('sessions').select('id, child_id, subject, topic, correct_count, total_questions, created_at, completed').eq('completed', true).order('created_at', { ascending: false }).limit(100),
       admin.from('questions').select('id, subject, topic, year, question_text, question_breakdown, parent_script, created_at').eq('layer', 1).order('created_at', { ascending: false }).limit(300),
+      admin.from('feedback').select('*').order('created_at', { ascending: false }),
     ])
 
     const authUsers = listResult.data?.users || []
     const children  = childResult.data || []
     const sessions  = sessionResult.data || []
     const questions = questionResult.data || []
+    const feedbackRaw = feedbackResult.data || []
 
     // Log errors but don't fail
     if (listResult.error)    console.error('listUsers error:', listResult.error.message)
     if (childResult.error)   console.error('children error:', childResult.error.message)
     if (sessionResult.error) console.error('sessions error:', sessionResult.error.message)
     if (questionResult.error) console.error('questions error:', questionResult.error.message)
+    if (feedbackResult.error) console.error('feedback error:', feedbackResult.error.message)
 
     // ── Stock count per subject+topic+year ────────────────────────────────────
     const { data: allLayer1, error: stockErr } = await admin
@@ -121,6 +124,14 @@ export async function GET(request) {
       }
     })
 
+    // ── Enrich feedback with user email ──────────────────────────────────────
+    const authUserMap = authUsers.reduce((acc, u) => { acc[u.id] = u; return acc }, {})
+    const feedback = feedbackRaw.map(f => ({
+      ...f,
+      user_email: authUserMap[f.user_id]?.email || '-',
+      user_name:  authUserMap[f.user_id]?.user_metadata?.full_name || '-',
+    }))
+
     return NextResponse.json({
       stats: {
         total_users: users.length,
@@ -128,12 +139,14 @@ export async function GET(request) {
         total_sessions: sessions.length,
         total_questions: (allLayer1 || []).length,
         accuracy: totalQ > 0 ? Math.round((totalBetul / totalQ) * 100) : 0,
+        total_feedback: feedback.length,
       },
       users,
       recentSessions,
       questions,
       qBySubject,
       stockMap,
+      feedback,
     })
 
   } catch (err) {

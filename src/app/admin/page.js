@@ -246,7 +246,7 @@ export default function AdminPage() {
     </div>
   )
 
-  const { stats, users, recentSessions, questions, qBySubject, stockMap } = data
+  const { stats, users, recentSessions, questions, qBySubject, stockMap, feedback } = data
 
   // Filter questions for browser
   const filteredQ = questions.filter(q => {
@@ -257,10 +257,11 @@ export default function AdminPage() {
   })
 
   const TABS = [
-    { id: 'pengguna', label: 'Pengguna', icon: '👥', count: stats.total_users },
-    { id: 'sesi',     label: 'Sesi',     icon: '📚', count: stats.total_sessions },
-    { id: 'soalan',   label: 'Soalan',   icon: '📋', count: stats.total_questions },
-    { id: 'jana',     label: 'Jana AI',  icon: '🤖', count: null },
+    { id: 'pengguna',  label: 'Pengguna',  icon: '👥', count: stats.total_users },
+    { id: 'sesi',      label: 'Sesi',      icon: '📚', count: stats.total_sessions },
+    { id: 'soalan',    label: 'Soalan',    icon: '📋', count: stats.total_questions },
+    { id: 'feedback',  label: 'Feedback',  icon: '💜', count: stats.total_feedback || 0 },
+    { id: 'jana',      label: 'Jana AI',   icon: '🤖', count: null },
   ]
 
   const currentSubjTopics = SUBJEK[filterSubjek]?.topics || []
@@ -414,6 +415,83 @@ export default function AdminPage() {
                   </div>
                 )
               })}
+            </div>
+          )}
+
+          {/* ── TAB: FEEDBACK ── */}
+          {tab === 'feedback' && (
+            <div className="divide-y divide-slate-100">
+              {(!feedback || feedback.length === 0) && (
+                <div className="py-16 text-center">
+                  <div className="text-4xl mb-3">💜</div>
+                  <p className="text-sm text-slate-500 font-medium">Belum ada feedback lagi.</p>
+                  <p className="text-xs text-slate-400 mt-1">Prompt muncul selepas sesi ke-3.</p>
+                </div>
+              )}
+              {(feedback || []).map(f => (
+                <div key={f.id} className="px-4 py-4 hover:bg-slate-50">
+                  {/* Header row */}
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{f.user_name !== '-' ? f.user_name : f.user_email}</p>
+                      <p className="text-xs text-slate-400">{f.user_email} · {fmt(f.created_at)}</p>
+                    </div>
+                    {/* Stars */}
+                    {f.rating && (
+                      <div className="flex gap-0.5 flex-shrink-0">
+                        {[1,2,3,4,5].map(s => (
+                          <span key={s} className={`text-base ${s <= f.rating ? 'opacity-100' : 'opacity-20'}`}>⭐</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Answers grid */}
+                  <div className="grid grid-cols-2 gap-1.5 mb-2.5 text-xs">
+                    {f.kaedah && (
+                      <div className="bg-slate-100 rounded-lg px-2.5 py-1.5">
+                        <span className="text-slate-400 font-medium">Kaedah: </span>
+                        <span className="text-slate-700 font-semibold capitalize">{
+                          f.kaedah === 'mudah' ? 'Mudah sangat 😄' :
+                          f.kaedah === 'agak'  ? 'Agak-agak 🤔' : 'Kurang faham 😅'
+                        }</span>
+                      </div>
+                    )}
+                    {f.soalan_sesuai && (
+                      <div className="bg-slate-100 rounded-lg px-2.5 py-1.5">
+                        <span className="text-slate-400 font-medium">Soalan: </span>
+                        <span className="text-slate-700 font-semibold capitalize">{
+                          f.soalan_sesuai === 'sesuai' ? 'Sesuai ✅' :
+                          f.soalan_sesuai === 'mudah'  ? 'Terlalu mudah 📗' : 'Terlalu susah 📕'
+                        }</span>
+                      </div>
+                    )}
+                    {f.rekomen && (
+                      <div className="bg-slate-100 rounded-lg px-2.5 py-1.5">
+                        <span className="text-slate-400 font-medium">Rekomen: </span>
+                        <span className="text-slate-700 font-semibold capitalize">{
+                          f.rekomen === 'ya'      ? 'Pasti! 🌟' :
+                          f.rekomen === 'mungkin' ? 'Mungkin 🤷' : 'Tidak ❌'
+                        }</span>
+                      </div>
+                    )}
+                    {f.fungsi_gemar && (
+                      <div className="bg-slate-100 rounded-lg px-2.5 py-1.5 col-span-2">
+                        <span className="text-slate-400 font-medium">Suka: </span>
+                        <span className="text-slate-700 font-semibold">{f.fungsi_gemar.split(',').join(' · ')}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Open comment */}
+                  {f.komen && (
+                    <div className="bg-violet-50 border border-violet-100 rounded-xl px-3 py-2.5">
+                      <p className="text-[10px] text-violet-400 font-bold uppercase tracking-wide mb-1">Cadangan</p>
+                      <p className="text-sm text-slate-700 leading-relaxed">"{f.komen}"</p>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
