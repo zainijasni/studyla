@@ -618,66 +618,65 @@ function SesiContent() {
 
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
-        {/* Hero */}
-        <div className={`bg-gradient-to-br ${grade.grad} px-5 pt-14 pb-20 text-center relative overflow-hidden`}>
-          <div className="absolute top-4 left-6 text-white/10 text-5xl font-black">★</div>
-          <div className="absolute top-8 right-10 text-white/10 text-3xl font-black">★</div>
-          <div className="absolute bottom-8 left-12 text-white/10 text-4xl font-black">✦</div>
-          <div className="text-7xl mb-3 relative">{grade.emoji}</div>
-          <h1 className="text-2xl font-black text-white mb-1">{grade.label}</h1>
-          <p className="text-white/70 text-sm">{anak?.name} — {total} soalan selesai</p>
+
+        {/* Hero — percentage lives here, no overlap needed */}
+        <div className={`bg-gradient-to-br ${grade.grad} px-5 pt-12 pb-8 text-center relative overflow-hidden flex-shrink-0`}>
+          <div className="absolute top-3 left-6 text-white/10 text-4xl font-black select-none">★</div>
+          <div className="absolute top-6 right-10 text-white/10 text-2xl font-black select-none">★</div>
+          <div className="absolute bottom-4 left-12 text-white/10 text-3xl font-black select-none">✦</div>
+
+          <div className="text-5xl mb-2 relative">{grade.emoji}</div>
+          <h1 className="text-xl font-black text-white mb-0.5">{grade.label}</h1>
+          <p className="text-white/60 text-xs mb-5">{anak?.name} · {total} soalan</p>
+
+          {/* Big percentage — in hero so always visible */}
+          <div className="inline-flex flex-col items-center bg-white/15 backdrop-blur-sm rounded-2xl px-8 py-4">
+            <p className="text-5xl font-black text-white leading-none">{peratus}%</p>
+            <p className="text-white/70 text-xs font-semibold mt-1 uppercase tracking-wide">Faham Sendiri</p>
+          </div>
         </div>
 
-        <div className="max-w-lg mx-auto px-4 -mt-10 pb-8 w-full">
-          {/* Score card */}
-          <div className="bg-white rounded-3xl shadow-lg border border-slate-100 p-5 mb-4">
+        {/* Content — flat, no overlap */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-8">
+          <div className="max-w-lg mx-auto space-y-3">
 
-            {/* Big score — berdasarkan faham sendiri sahaja */}
-            <div className="text-center mb-4 pb-4 border-b border-slate-100">
-              <p className={`text-6xl font-black ${isHebat ? 'text-emerald-500' : isOk ? 'text-sky-500' : 'text-orange-500'}`}>
-                {peratus}%
+            {/* Stats card */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+              <div className="flex justify-around items-center mb-4">
+                <div className="text-center">
+                  <p className="text-2xl font-black text-emerald-500">{fahamSendiri}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 font-medium leading-tight">✅ Faham<br/>Sendiri</p>
+                </div>
+                <div className="w-px h-10 bg-slate-100" />
+                <div className="text-center">
+                  <p className="text-2xl font-black text-amber-400">{denganBantuan}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 font-medium leading-tight">🔄 Dengan<br/>Bantuan</p>
+                </div>
+                <div className="w-px h-10 bg-slate-100" />
+                <div className="text-center">
+                  <p className="text-2xl font-black text-slate-600">{total}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 font-medium leading-tight">📋 Jumlah<br/>Soalan</p>
+                </div>
+              </div>
+              <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className={`h-2.5 rounded-full bg-gradient-to-r ${grade.grad} transition-all duration-1000`}
+                  style={{ width: `${peratus}%` }} />
+              </div>
+              <p className="text-[10px] text-slate-400 text-center mt-2">
+                {denganBantuan > 0
+                  ? `${denganBantuan} soalan faham selepas dibimbing`
+                  : 'Semua dijawab sendiri tanpa bantuan! 🎉'}
               </p>
-              <p className="text-xs text-slate-400 mt-1 font-medium uppercase tracking-wide">Faham Sendiri</p>
             </div>
 
-            {/* Stats row — jujur: faham sendiri vs dengan bantuan */}
-            <div className="flex justify-around items-center mb-4">
-              <div className="text-center">
-                <p className="text-2xl font-black text-emerald-500">{fahamSendiri}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5 font-medium leading-tight">✅ Faham<br/>Sendiri</p>
-              </div>
-              <div className="w-px h-10 bg-slate-100" />
-              <div className="text-center">
-                <p className="text-2xl font-black text-amber-400">{denganBantuan}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5 font-medium leading-tight">🔄 Dengan<br/>Bantuan</p>
-              </div>
-              <div className="w-px h-10 bg-slate-100" />
-              <div className="text-center">
-                <p className="text-2xl font-black text-slate-600">{total}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5 font-medium leading-tight">📋 Jumlah<br/>Soalan</p>
-              </div>
+            {/* Mesej motivasi */}
+            <div className={`rounded-2xl px-4 py-3 text-sm text-center font-medium ${grade.bg} ${grade.text} border ${grade.border}`}>
+              {isHebat
+                ? `Tahniah! ${anak?.name} faham topik ini tanpa banyak bantuan. Boleh teruskan ke topik baru! 🎉`
+                : isOk
+                ? `${anak?.name} dah ada asas — ulang topik ini sekali lagi untuk kukuhkan kefahaman. 💪`
+                : `${anak?.name} masih perlukan bimbingan. Cuba semula dari topik asas dulu. 📚`}
             </div>
-
-            {/* Progress bar */}
-            <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-              <div className={`h-3 rounded-full bg-gradient-to-r ${grade.grad} transition-all duration-1000`}
-                style={{ width: `${peratus}%` }} />
-            </div>
-            <p className="text-[10px] text-slate-400 text-center mt-2">
-              {denganBantuan > 0
-                ? `${denganBantuan} soalan faham selepas dibimbing`
-                : 'Semua dijawab sendiri tanpa bantuan!'}
-            </p>
-          </div>
-
-          {/* Mesej motivasi */}
-          <div className={`rounded-2xl px-4 py-3 text-sm text-center mb-5 font-medium ${grade.bg} ${grade.text} border ${grade.border}`}>
-            {isHebat
-              ? `Tahniah! ${anak?.name} faham topik ini tanpa banyak bantuan. Boleh teruskan ke topik baru! 🎉`
-              : isOk
-              ? `${anak?.name} dah ada asas — ulang topik ini sekali lagi untuk kukuhkan kefahaman. 💪`
-              : `${anak?.name} masih perlukan bimbingan. Cuba semula dari topik asas dulu. 📚`}
-          </div>
 
           {/* Feedback prompt — shows after 3rd session if not submitted yet */}
           {showFeedbackPrompt && (
