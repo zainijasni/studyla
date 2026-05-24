@@ -594,6 +594,11 @@ function SesiContent() {
     const peratus = Math.round((betul / total) * 100)
     const isHebat = peratus >= 80
     const isOk = peratus >= 50
+
+    // Track session count & check if feedback prompt should show
+    const sessionCount = parseInt(localStorage.getItem('studyla_sessions_completed') || '0') + 1
+    localStorage.setItem('studyla_sessions_completed', String(sessionCount))
+    const showFeedbackPrompt = sessionCount >= 3 && localStorage.getItem('studyla_feedback_done') !== 'true'
     const grade = isHebat ? { emoji: '🌟', label: 'Hebat!', grad: 'from-emerald-500 to-teal-600', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' }
                 : isOk    ? { emoji: '👍', label: 'Bagus!',  grad: 'from-sky-500 to-blue-600',     bg: 'bg-sky-50',     text: 'text-sky-700',     border: 'border-sky-200' }
                 :            { emoji: '💪', label: 'Cuba Lagi!', grad: 'from-orange-400 to-rose-500', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' }
@@ -675,6 +680,22 @@ function SesiContent() {
               Lihat Kemajuan 📊
             </button>
           </div>
+
+          {/* Feedback prompt — shows after 3rd session if not submitted yet */}
+          {showFeedbackPrompt && (
+            <div className="mt-4 bg-violet-50 border border-violet-200 rounded-2xl p-4 flex items-center gap-3">
+              <span className="text-2xl flex-shrink-0">💜</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-violet-800 leading-tight">Boleh bagi pendapat sekejap?</p>
+                <p className="text-xs text-violet-500 mt-0.5">Ambil masa &lt;2 minit. Sangat membantu kami!</p>
+              </div>
+              <button
+                onClick={() => router.push('/feedback?from=sesi')}
+                className="flex-shrink-0 bg-violet-700 text-white text-xs font-bold px-3 py-2 rounded-xl active:scale-95 transition-all">
+                Isi →
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )

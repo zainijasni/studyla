@@ -188,8 +188,24 @@ export default function BantuanPage() {
             </div>
           ))}
 
+          {/* Feedback CTA */}
+          <div className="bg-gradient-to-r from-violet-600 to-indigo-700 rounded-2xl px-5 py-5">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl flex-shrink-0">💜</span>
+              <div className="flex-1">
+                <p className="text-white font-bold text-sm">Bagi Maklum Balas</p>
+                <p className="text-violet-200 text-xs mt-0.5">Bantu kami tingkatkan StudyLa. Ambil masa &lt;2 minit.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => window.location.href = '/feedback'}
+              className="mt-3 w-full bg-white text-violet-800 font-bold text-sm py-3 rounded-xl active:scale-95 transition-all">
+              Isi Borang Maklum Balas →
+            </button>
+          </div>
+
           {/* Contact section */}
-          <div className="bg-violet-50 border border-violet-100 rounded-2xl px-5 py-5 text-center">
+          <div className="bg-slate-100 border border-slate-200 rounded-2xl px-5 py-4 text-center">
             <p className="text-sm font-semibold text-slate-700 mb-1">Ada soalan lain?</p>
             <p className="text-sm text-slate-500">
               Hubungi kami di{' '}
