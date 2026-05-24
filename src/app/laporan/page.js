@@ -205,6 +205,8 @@ function LaporanContent() {
         setSessions(sessionsData || [])
       }
 
+      // Mark laporan as visited — feedback trigger needs this
+      localStorage.setItem('studyla_laporan_visited', 'true')
       setLoading(false)
     }
     init()

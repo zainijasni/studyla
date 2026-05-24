@@ -596,9 +596,11 @@ function SesiContent() {
     const isOk = peratus >= 50
 
     // Track session count & check if feedback prompt should show
+    // Conditions: ≥5 sesi selesai DAN dah lawat laporan sekali — barulah user dah explore keseluruhan app
     const sessionCount = parseInt(localStorage.getItem('studyla_sessions_completed') || '0') + 1
     localStorage.setItem('studyla_sessions_completed', String(sessionCount))
-    const showFeedbackPrompt = sessionCount >= 3 && localStorage.getItem('studyla_feedback_done') !== 'true'
+    const sudahLawatLaporan = localStorage.getItem('studyla_laporan_visited') === 'true'
+    const showFeedbackPrompt = sessionCount >= 5 && sudahLawatLaporan && localStorage.getItem('studyla_feedback_done') !== 'true'
     const grade = isHebat ? { emoji: '🌟', label: 'Hebat!', grad: 'from-emerald-500 to-teal-600', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' }
                 : isOk    ? { emoji: '👍', label: 'Bagus!',  grad: 'from-sky-500 to-blue-600',     bg: 'bg-sky-50',     text: 'text-sky-700',     border: 'border-sky-200' }
                 :            { emoji: '💪', label: 'Cuba Lagi!', grad: 'from-orange-400 to-rose-500', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' }
