@@ -20,7 +20,13 @@
       "Bash(mkdir -p \"/mnt/c/Users/Dell/Desktop/studyla/src/app/tetapan\" 2>/dev/null; ls \"/mnt/c/Users/Dell/Desktop/studyla/src/app/\" 2>/dev/null || echo \"check windows path\")",
       "Bash(git remote *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git commit *)",
+      "Bash(npx vercel *)",
+      "Bash(npm install *)",
+      "Bash(node generate-icons.mjs)",
+      "Bash(dir \"C:\\\\Users\\\\Dell\\\\Desktop\\\\studyla\\\\public\")"
     ]
   }
 }
