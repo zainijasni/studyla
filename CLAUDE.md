@@ -6,58 +6,73 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ---
 
-# StudyLa — Dokumentasi Sistem & Strategi
+# StudyLa — Dokumentasi Sistem
 
 **Platform belajar untuk ibu bapa pandu anak menggunakan Kaedah 3 Lapisan.**
-Dimiliki dan dibangunkan oleh **DCK Tech**.
+Dimiliki dan dibangunkan oleh **DCK Tech**. Status: Aktif — Fasa Beta, stabil, tiada perubahan aktif besar.
+
+> Dokumen ini diaudit terus daripada kod sumber (Jun 2026) — bukan sekadar catatan ingatan. Rujuk seksyen **Known Issues** untuk isu sebenar yang dijumpai dalam kod.
 
 ---
 
-## 📋 Maklumat Projek
+## 1. Tujuan & Overview
+
+StudyLa membantu ibu bapa **mengajar anak sendiri di rumah** menggunakan kaedah berstruktur 3 lapisan, supaya anak faham proses berfikir — bukan sekadar hafal jawapan atau minta jawapan terus. Parent yang pegang device dan jadi "coach", dipandu skrip dan soalan panduan yang disediakan sistem.
 
 | Perkara | Butiran |
 |---|---|
+| **Pengguna sasaran** | Ibu bapa anak sekolah rendah Malaysia (Tahun 1–5) |
+| **Kurikulum** | KSSR Semakan 2017 |
+| **Subjek** | Matematik, Bahasa Melayu, Bahasa Inggeris, Sains (4 subjek, 38 topik) |
 | **URL Production** | https://studyla.vercel.app |
 | **GitHub** | https://github.com/zainijasni/studyla.git |
 | **Port Development** | localhost:3001 |
-| **Admin Email** | zaini.jasni@gmail.com |
-| **Status** | Aktif — Fasa Beta |
+| **Admin Email** | zaini.jasni@gmail.com (hardcoded — lihat Known Issues) |
 
 ---
 
-## 🛠️ Tech Stack
+## 2. Tech Stack (terus dari package.json)
 
 | Bahagian | Teknologi |
 |---|---|
-| **Frontend** | Next.js 16.2.6, React 19.2.4, Tailwind CSS v4 |
-| **Backend / Database** | Supabase (PostgreSQL + Auth) |
-| **AI Model** | Gemini 2.0 Flash via OpenRouter (`google/gemini-2.0-flash-001`) |
-| **Deployment** | Vercel (auto-deploy dari GitHub) |
-| **PWA** | Service Worker via `RegisterSW.js` |
+| **Framework** | Next.js 16.2.6 (App Router), React 19.2.4 |
+| **Styling** | Tailwind CSS v4 (`@tailwindcss/postcss`) |
+| **Backend / DB** | Supabase (PostgreSQL + Auth), klien `@supabase/supabase-js` |
+| **AI Jana Soalan** | Google Gemini 2.0 Flash, diakses **via OpenRouter** (bukan terus Google API) |
+| **Deployment** | Vercel, auto-deploy dari `master` |
+| **PWA** | Custom service worker (`public/sw.js`), manifest di `public/manifest.json` |
+| **Utils** | `clsx` + `tailwind-merge` (helper `cn()`), `lucide-react`, `class-variance-authority` |
+| **Build config** | `next.config.mjs` set `typescript.ignoreBuildErrors: true` — TS errors tak block deploy |
+
+Path alias: `@/*` → `./src/*` (jsconfig.json).
 
 ---
 
-## 📂 Struktur Folder
+## 3. Struktur Folder (sebenar)
 
 ```
 studyla/
 ├── src/
 │   ├── app/
-│   │   ├── page.js                    ← Landing page
+│   │   ├── page.js                     ← Landing page (/)
+│   │   ├── loading.js                  ← Global loading fallback (skeleton)
+│   │   ├── layout.js                   ← Root layout, font Plus Jakarta Sans, PWA metadata
 │   │   ├── login/page.js
-│   │   ├── daftar/page.js
-│   │   ├── dashboard/page.js
-│   │   ├── onboarding/page.js
+│   │   ├── daftar/page.js              ← Pendaftaran (nama, email, no. telefon, password)
+│   │   ├── onboarding/page.js          ← 3-step: welcome → tambah anak → pilih subjek
+│   │   ├── dashboard/
+│   │   │   ├── page.js
+│   │   │   └── loading.js
 │   │   ├── profil-anak/
 │   │   │   ├── tambah/page.js
-│   │   │   └── [id]/page.js
-│   │   ├── pilih-sesi/page.js
-│   │   ├── sesi/page.js               ← Sesi belajar (teras)
-│   │   ├── laporan/page.js
-│   │   ├── tetapan/page.js
-│   │   ├── bantuan/page.js
-│   │   ├── feedback/page.js
-│   │   ├── admin/page.js
+│   │   │   └── [id]/page.js            ← Edit + padam profil anak
+│   │   ├── pilih-sesi/page.js          ← Grid 2×2 subjek + senarai topik
+│   │   ├── sesi/page.js                ← Sesi belajar 3-layer (fail paling besar/kompleks)
+│   │   ├── laporan/page.js             ← Statistik, streak, status per topik
+│   │   ├── tetapan/page.js             ← Tukar nama & kata laluan
+│   │   ├── bantuan/page.js             ← FAQ accordion + CTA feedback
+│   │   ├── feedback/page.js            ← Borang 6-soalan, satu skrin per soalan
+│   │   ├── admin/page.js               ← Panel admin (5 tab)
 │   │   └── api/
 │   │       ├── generate-question/route.js
 │   │       └── admin/
@@ -65,192 +80,193 @@ studyla/
 │   │           ├── bulk-generate/route.js
 │   │           └── delete-user/route.js
 │   ├── components/
-│   │   ├── Sidebar.js                 ← Desktop nav (hidden md:block)
-│   │   ├── BottomNav.js               ← Mobile nav (md:hidden)
-│   │   └── RegisterSW.js
+│   │   ├── Sidebar.js                  ← Desktop nav (hidden md:block)
+│   │   ├── BottomNav.js                ← Mobile nav (md:hidden)
+│   │   └── RegisterSW.js               ← Daftar service worker on mount
 │   └── lib/
-│       ├── supabase.js
-│       ├── gemini.js                  ← OpenRouter wrapper
-│       └── utils.js
+│       ├── supabase.js                 ← Klien Supabase browser (anon key)
+│       ├── gemini.js                   ← Wrapper OpenRouter (bukan @google/generative-ai walaupun ada dalam deps)
+│       └── utils.js                    ← `cn()` helper sahaja
 ├── docs/
-│   ├── master-content.md
-│   └── belajarbersama-master-content.md
-├── CLAUDE.md                          ← (this file)
+│   ├── studyla-schema.sql              ← Schema rasmi (SUMBER KEBENARAN untuk DB)
+│   ├── master-content.md               ← Rujukan content/prompt (identik dgn fail bawah)
+│   └── belajarbersama-master-content.md ← Sama 810 baris — nama lama projek sebelum rebrand
+├── public/
+│   ├── sw.js                           ← Service worker custom (cache-first untuk static, network-first untuk HTML)
+│   ├── manifest.json
+│   └── logo.png, icon-192.png, icon-512.png, apple-touch-icon.png
+├── CLAUDE.md                           ← (fail ini)
 └── package.json
 ```
 
 ---
 
-## 🗄️ Database Schema (Supabase)
+## 4. Database Schema (terus dari `docs/studyla-schema.sql`)
 
-| Jadual | Fungsi |
-|---|---|
-| `children` | Profil anak — `id, name, year, parent_id, created_at` |
-| `questions` | Soalan per layer — `id, subject, topic, year, layer (1/2/3), question_text, question_breakdown, parent_script, answer, answer_steps, source, is_approved, created_at` |
-| `sessions` | Rekod sesi belajar — `id, child_id, subject, topic, correct_count, total_questions, completed, created_at` |
-| `topic_progress` | Kemajuan per topik — `child_id, subject, topic, mastery_status (mastered/progressing/struggling), last_session_at` |
-| `feedback` | Maklum balas pengguna — `id, user_id, answers (jsonb), created_at` |
+```sql
+user_profiles   id (= auth.users.id), email, full_name, plan ('free'|'premium'), created_at
+children        id, parent_id → user_profiles, name, year (1–5), created_at
+questions       id, subject, year, topic, layer (1|2|3), question_text, question_breakdown (jsonb),
+                parent_script, answer, answer_steps (jsonb), explanation, source, difficulty,
+                is_approved, created_at
+sessions        id, child_id, parent_id, subject, topic, year, total_questions, correct_count,
+                duration_minutes, completed, created_at
+session_questions  id, session_id, question_id, layer_reached, stuck_at_layer, attempts, correct,
+                    time_seconds, created_at
+topic_progress  id, child_id, subject, topic, year,
+                status ('mastered'|'progressing'|'struggling'|'not_started'|'backtrack_needed'),
+                sessions_count, last_session_at, updated_at  — UNIQUE(child_id, subject, topic)
+feedback        id, user_id, answers (jsonb), created_at   (tiada dalam .sql — dibuat manual via Supabase dashboard)
+```
 
-### `questions` — 3 Layer per soalan
-Satu set soalan = 3 row dalam DB (layer 1, 2, 3), berkongsi `question_text`.
-- **Layer 1** — Faham Soalan (guiding questions)
-- **Layer 2** — Cara Selesaikan (method steps, no answer)
-- **Layer 3** — Cuba Jawab (full worked solution)
+RLS aktif pada semua jadual utama: `auth.uid() = parent_id` (children/sessions), `auth.uid() = id` (user_profiles), join melalui `children`/`sessions` untuk `session_questions`/`topic_progress`. Auto-trigger `on_auth_user_created` cipta row `user_profiles` bila user baru sign up.
 
-### `sessions` — correct_count = Faham Sendiri
-`correct_count` ≠ "berapa soalan betul". Ia mengira **faham sendiri** — soalan yang betul pada cubaan pertama tanpa tekan "Cuba Lagi".
+### `questions` — 3 layer per soalan
+Satu set soalan = 3 row (layer 1/2/3) berkongsi `question_text` yang sama. App group balik ikut `question_text` (lihat `groupSoalanByLayers()` dalam `sesi/page.js`).
+
+### `sessions.correct_count` = "Faham Sendiri", bukan "jawab betul"
+Logic dalam `sesi/page.js` (`finishSession`): soalan dikira **fahamSendiri** hanya jika betul pada cubaan **pertama** (tiada tekan "Cuba Lagi"). Soalan yang betul selepas "Cuba Lagi" dikira "Dengan Bantuan" — betul, tapi tidak masuk `correct_count`.
+
+```
+peratus = fahamSendiriCount / total_questions * 100
+status  = peratus >= 80 ? 'mastered' : peratus >= 50 ? 'progressing' : 'struggling'
+```
 
 ---
 
-## 📱 Halaman & Features
+## 5. Halaman & Logic Penting
 
-### Landing Page (`/`)
-- Spinner awal jika pengguna mungkin log masuk (sniff localStorage auth-token)
-- Redirect ke `/dashboard` jika sesi aktif
-- Footer: "Dimiliki dan dibangunkan oleh DCK Tech"
+### Landing (`/`)
+Sniff `localStorage` (cari key dengan `'auth-token'`) secara **synchronous** sebelum render — kalau ada, papar spinner dulu (elak flash landing page) sementara `getSession()` confirm dan redirect ke `/dashboard`.
 
-### Dashboard (`/dashboard`)
-- Senarai profil anak (tambah/edit/padam)
-- Logo besar untuk branding
-- Start sesi belajar per anak
-
-### Pilih Sesi (`/pilih-sesi`)
-- Grid 2×2 untuk 4 subjek (semua nampak sekaligus, tiada scroll)
-- Pilih subjek → topik → tahun → start
-- Progress per topik ditunjukkan ("X/Y faham")
-
-### Sesi Belajar (`/sesi`)
-- 3 fasa: Layer 1 → Layer 2 → Layer 3 (Cuba Jawab)
-- Header menunjukkan nama subjek + topik
-- "Cuba Lagi" untuk soalan yang tidak faham (ulang dari Layer 1)
-- **Selesai screen**: flat layout, % Faham Sendiri dalam hero pill frosted glass
+### Sesi Belajar (`/sesi`) — logic paling kompleks
+- **Question pooling**: sebelum mula sesi, kira berapa banyak soalan (layer 1) wujud untuk `subject+topic+year`. `MIN_POOL = 3`, `POOL_TARGET = 300`.
+  - Pool ≥ 3 → serve dari DB dengan random offset (elak ulang soalan sama).
+  - Pool < 3 **dan** tiada generation dalam 5 minit lepas → panggil `/api/generate-question` (AI generate 3 soalan baru = 9 row).
+  - Pool < 3 **tapi** ada generation baru-baru ini (cooldown) → tunggu 4 saat, `window.location.reload()` — elak ramai user trigger AI serentak untuk topik sama.
+- **Skoring**: lihat seksyen 4 di atas. `results` state dikemaskini async — `finishSession()` terima `lastCorrect`/`lastCubaan` sebagai parameter dan append manual ke `allResults` supaya soalan terakhir tidak terlepas dalam kiraan (state closure issue yang sudah diperbetulkan).
+- Semua DB write dalam `finishSession()` dibalut `try/catch` — kalau gagal, `setSelesai(true)` tetap jalan supaya parent tak stuck pada loading screen.
+- Tekan "Berhenti" (✕ pada header) terus `router.push('/dashboard')` **tanpa konfirmasi** dan **tanpa padam** row `sessions` yang sudah dicipta di awal sesi (lihat Known Issues #5).
 
 ### Laporan (`/laporan`)
-- Statistik per anak: sesi, streak, ketepatan
-- Status per topik: Dah Faham / Dalam Proses / Perlu Bantuan
-- Sets `localStorage.setItem('studyla_laporan_visited', 'true')` bila dibuka
-
-### Tetapan (`/tetapan`)
-- Tukar kata laluan
-
-### Bantuan (`/bantuan`)
-- FAQ accordion dalam 5 seksyen
-- CTA untuk isi feedback
+Set `localStorage.studyla_laporan_visited = 'true'` selepas data load — flag ini jadi prasyarat untuk trigger feedback.
 
 ### Feedback (`/feedback`)
-- 6 soalan (rating bintang, pilihan, teks)
-- Satu soalan per skrin + progress bar
-- Submit → simpan ke `feedback` table + set `localStorage.studyla_feedback_done = 'true'`
+Trigger muncul pada selesai screen `/sesi` **hanya jika ketiga-tiga** syarat ini benar:
+1. `localStorage.studyla_sessions_completed >= 5`
+2. `localStorage.studyla_laporan_visited === 'true'`
+3. `localStorage.studyla_feedback_done !== 'true'`
 
-### Admin (`/admin`) — zaini.jasni@gmail.com sahaja
-- 5 tab: Overview, Pengguna, Sesi Terkini, Soalan, Feedback
-- Data diambil dari `/api/admin/data` (service role key, bypass RLS)
-
----
-
-## 🔢 Sistem Pemarkahan (Faham Sendiri)
-
-```
-Betul pada cubaan pertama  → fahamSendiri = true  → dikira dalam %
-Betul selepas Cuba Lagi    → fahamSendiri = false → dikira sebagai "Dengan Bantuan"
-```
-
-`peratus = fahamSendiriCount / total * 100`
-
-Status dalam `topic_progress`:
-- `mastered` — ≥80%
-- `progressing` — 50–79%
-- `struggling` — <50%
+### Admin (`/admin`) — `zaini.jasni@gmail.com` sahaja
+5 tab: Overview, Pengguna, Sesi Terkini, Soalan, Feedback. Data dari `GET /api/admin/data` (guna service role key, bypass RLS). Ada juga "Bulk Generate" dan "Seed Popular Topics" untuk pra-isi bank soalan.
 
 ---
 
-## 📊 Trigger Feedback
+## 6. API Routes
 
-Feedback prompt muncul pada selesai screen **hanya jika**:
-1. `sessionCount >= 5` (dah habis ≥5 sesi)
-2. `localStorage.studyla_laporan_visited === 'true'` (dah lawat laporan)
-3. `localStorage.studyla_feedback_done !== 'true'` (belum pernah isi)
-
----
-
-## 🧭 Navigasi
-
-Dua sistem navigasi berasingan — **kedua-dua perlu dikemaskini** bila tambah halaman baru:
-
-| Komponen | Guna | Item |
+| Route | Auth | Fungsi |
 |---|---|---|
-| `Sidebar.js` | Desktop (`hidden md:block`) | Utama, Kemajuan, Bantuan, Tetapan, Admin (jika admin) |
-| `BottomNav.js` | Mobile (`md:hidden`) | Utama, Kemajuan, Bantuan, Tetapan, Admin (jika admin) |
+| `POST /api/generate-question` | Tiada (public) | Jana 3 soalan AI (9 row) via OpenRouter, simpan ke `questions` |
+| `GET /api/admin/data` | Bearer token, cek email admin | Semua data admin (users, sessions, questions, feedback, stock count) |
+| `POST /api/admin/bulk-generate` | Bearer token, cek email admin | Jana soalan pukal, sehingga 20 batch (~60 soalan) sekali panggil |
+| `POST /api/admin/delete-user` | Bearer token, cek email admin | Padam children → sessions → topic_progress → auth user (⚠️ ada bug, lihat Known Issues #1) |
+
+`/api/generate-question` **tidak ada auth check** — sesiapa boleh panggil terus dan trigger AI generation (kos OpenRouter). Cooldown 5-minit dalam `sesi/page.js` mengurangkan risiko, tapi endpoint sendiri tidak rate-limited atau auth-gated.
 
 ---
 
-## 🤖 Jana Soalan AI
+## 7. Navigasi
 
-**API Route:** `POST /api/generate-question`
+Dua komponen berasingan — **kena update kedua-dua** bila tambah halaman:
 
-```json
-{ "subject": "matematik", "topic": "pecahan", "year": 3 }
-```
+| Komponen | Guna | Label nav utama |
+|---|---|---|
+| `Sidebar.js` | Desktop (`hidden md:block`) | "Profil Anak" → `/dashboard`, "Kemajuan", "Tetapan", "Bantuan" |
+| `BottomNav.js` | Mobile (`md:hidden`) | "Utama" → `/dashboard`, "Kemajuan", "Bantuan", "Tetapan" |
 
-- Memanggil Gemini 2.0 Flash via OpenRouter
-- Jana 3 soalan berbeza sekaligus → simpan 9 rows ke DB (3 soalan × 3 layers)
-- Jika tiada soalan dalam DB untuk topik+tahun, `sesi/page.js` trigger auto-generate (10–15 saat)
+Catatan: label item pertama **tidak konsisten** antara dua komponen ("Profil Anak" vs "Utama") dan urutan item pun berbeza (Sidebar: Kemajuan→Tetapan→Bantuan; BottomNav: Kemajuan→Bantuan→Tetapan) — kosmetik sahaja, tidak fungsional, tapi boleh disamakan.
 
-**38 Topik tersedia** (4 subjek):
-- **Matematik**: nombor-bulat, tambah-tolak, darab-bahagi, wang, masa-waktu, ukuran, pecahan, perpuluhan, peratus, luas-perimeter, data-graf, nisbah
-- **Bahasa Melayu**: ejaan-bm, tatabahasa-asas, tatabahasa-lanjut, pemahaman, karangan, simpulan-bahasa, karangan-fakta, ayat-majmuk
-- **Bahasa Inggeris**: vocabulary, phonics-spelling, grammar-basic, grammar-tenses, reading-comprehension, writing, grammar-advanced, letter-writing
-- **Sains**: deria, haiwan, tumbuhan, cuaca, jirim, manusia-badan, cahaya-bunyi, daya-gerak, ekosistem, bumi-sumber
+Admin link ditambah secara berasingan dalam kedua komponen, conditional pada `user.email === ADMIN_EMAIL`.
 
 ---
 
-## 🔐 API Routes
+## 8. Environment Variables
 
-| Route | Fungsi |
-|---|---|
-| `POST /api/generate-question` | Jana soalan AI + simpan ke DB |
-| `GET /api/admin/data` | Semua data admin (auth: Bearer token) |
-| `POST /api/admin/bulk-generate` | Jana soalan secara pukal |
-| `POST /api/admin/delete-user` | Padam user (profile dulu, baru auth) |
-
----
-
-## ⚙️ Environment Variables
+Ditakrif dalam `.env.local` (nama sahaja, tiada value didedah):
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-OPENROUTER_API_KEY=
+GEMINI_API_KEY=        # ⚠️ tidak digunakan dalam kod — lihat Known Issues #3
+OPENROUTER_API_KEY=    # digunakan sebenar dalam src/lib/gemini.js
 ```
 
 ---
 
-## 🎨 Design System
+## 9. Known Issues (dijumpai semasa audit kod, Jun 2026)
+
+1. **Bug — `delete-user` query column salah.** `src/app/api/admin/delete-user/route.js:36` query `children` dengan `.eq('user_id', userId)`, tapi nama column sebenar dalam schema (dan digunakan di semua tempat lain) adalah `parent_id`. Akibat: cleanup `topic_progress`/`sessions`/`children` sebelum padam user akan **tidak jumpa apa-apa row** (Supabase pulangkan ralat atau senarai kosong), jadi data anak/sesi jadi **orphaned** walaupun auth user berjaya dipadam.
+2. **RPC tak wujud — `increment_topic_sessions`.** Dipanggil dalam `sesi/page.js:536` (`supabase.rpc('increment_topic_sessions', ...)`), tetapi function ini **tidak ditakrifkan** dalam `docs/studyla-schema.sql` mahupun fail lain dalam repo. Dibalut `.catch(() => {})` jadi gagal senyap setiap kali — column `topic_progress.sessions_count` berkemungkinan kekal `0`/stale untuk semua rekod.
+3. **Env var tidak digunakan — `GEMINI_API_KEY`.** Wujud dalam `.env.local` tapi kod hanya guna `OPENROUTER_API_KEY` (`src/lib/gemini.js`). Gemini diakses melalui OpenRouter, bukan terus. Package `@google/generative-ai` pun ada dalam `package.json` tapi tidak diimport di mana-mana.
+4. **Fail dokumentasi pendua.** `docs/master-content.md` dan `docs/belajarbersama-master-content.md` adalah **identik** (810 baris). "BelajarBersama" nampaknya nama projek asal sebelum rebrand ke "StudyLa" — satu daripadanya patut dipadam atau digabung.
+5. **Sesi ditinggalkan jadi row "orphan".** Row `sessions` dicipta serta-merta bila sesi mula (`completed: false`). Kalau parent tekan "Berhenti" sebelum habis, row itu kekal `completed: false` selama-lamanya — tidak dipadam, tidak ditanda. `laporan/page.js` filter `eq('completed', true)` jadi tak nampak di UI, tapi jadual `sessions` terkumpul row tak guna dari masa ke masa.
+6. **State tidak guna — `passwordLama` dalam `tetapan/page.js`.** `useState` untuk "kata laluan lama" ditakrif (baris 15) tapi field untuk dia **tidak pernah dirender** dalam form — Supabase `updateUser({password})` tidak perlukan kata laluan lama pun (sah selagi sesi aktif), jadi ini cuma dead state, bukan security gap.
+7. **Butang "Naik Taraf ke Premium" tidak berfungsi.** Dalam `Sidebar.js`, butang ini tiada `onClick` handler — UI placeholder sahaja. Schema sudah ada column `user_profiles.plan` ('free'/'premium') tapi tiada logic kat mana-mana yang baca/tulis column ini. Monetisasi belum diimplementasi (rujuk seksyen Strategi Bisnes di bawah — semuanya masih cadangan, bukan dibina).
+8. **`ADMIN_EMAIL` hardcoded berulang.** String `'zaini.jasni@gmail.com'` ditulis berasingan dalam sekurang-kurangnya 6 fail (`Sidebar.js`, `BottomNav.js`, `admin/page.js`, dan 3 fail route admin). Tiada satu sumber kebenaran (constant/env var) — risiko terlepas pandang kalau email admin bertukar.
+9. **`POST /api/generate-question` tiada auth check.** Tidak macam endpoint admin yang lain, endpoint ni boleh dipanggil oleh sesiapa tanpa token, trigger panggilan AI berbayar (OpenRouter). Cooldown 5-minit di client-side (`sesi/page.js`) mengurangkan risiko abuse tapi tidak menghalangnya pada level API.
+
+---
+
+## 10. Ringkasan Git History (42 commit, urutan kronologi)
+
+| Fasa | Perubahan utama |
+|---|---|
+| **Foundation** | `Create Next App` boilerplate → StudyLa v1.0 penuh (AI question gen + redesigned UI) dalam satu commit besar |
+| **Stabilkan build** | Disable ESLint/TypeScript error semasa Vercel build, lazy Supabase init untuk elak build crash |
+| **PWA** | Tambah service worker, installable di Android/iOS, fix layout supaya content tak tertutup bottom nav |
+| **Admin tooling** | Admin dashboard (user mgmt, sesi, soalan), bulk AI generate, smart question pooling (generate hanya bila pool < 9, recycle pada 300) |
+| **Cost control AI** | Turunkan `MIN_POOL` ke 3 + cooldown generation 5 minit — elak panggilan AI berlebihan |
+| **UX laporan** | Streak, carta 7-hari, accuracy per subjek, cadangan pintar |
+| **Speed** | Tukar semua `getUser()` (network call) → `getSession()` (local cache) merentas semua halaman; skeleton screen ganti spinner |
+| **Onboarding** | 3-step flow untuk user baru (welcome → tambah anak → pilih subjek) |
+| **Growth/branding** | Landing page, logo lebih besar, grid 2×2 subjek (dari scroll tab), credit "DCK Tech" |
+| **Data pengguna** | Tambah no. telefon semasa daftar, admin boleh lihat detail user |
+| **Honest scoring** (terbaru) | Skema "Faham Sendiri" gantikan kiraan "betul" naif — kira hanya cubaan pertama tanpa "Cuba Lagi" sebagai kefahaman sebenar |
+| **Feedback system** (terbaru) | Borang 6-soalan in-app, trigger bersyarat (5 sesi + lawat laporan), tab admin untuk baca respons, placement diperbaiki (atas fold, atas butang) |
+| **Polish mobile** (terbaru) | Fix selesai screen — peratusan dalam hero pill frosted-glass, buang negative-margin overlap yang tutup teks pada mobile |
+| **Dokumentasi** (terbaru) | Konsolidasi AGENTS.md + dokumen bisnes ke dalam satu CLAUDE.md (commit sebelum audit ini) |
+
+---
+
+## 11. Design System
 
 | Elemen | Nilai |
 |---|---|
-| **Primary** | Violet (`violet-700`, `violet-800`) |
+| **Primary** | Violet (`violet-700`/`violet-800`), accent rose `#BE185D` (login/daftar CTA) |
 | **Background** | Slate (`slate-50`, `slate-100`) |
-| **Success** | Emerald (`emerald-500`) |
-| **Mobile layout** | `h-screen flex flex-col overflow-hidden` + BottomNav `pb-20` |
-| **Desktop layout** | `md:ml-52` untuk sidebar offset |
-| **Hero pattern** | Gradient bg + frosted glass pill (`bg-white/15 backdrop-blur-sm rounded-2xl`) |
+| **Status colors** | Emerald = mastered/success, Amber = progressing/warning, Red = struggling |
+| **Mobile layout** | `h-screen flex flex-col overflow-hidden` + BottomNav, `pb-20`/`pb-24` untuk elak overlap |
+| **Desktop layout** | `md:ml-60` offset untuk Sidebar (lebar `w-60`) |
+| **Hero pattern** | Gradient `from-violet-800 via-purple-800 to-indigo-900` + frosted glass pill (`bg-white/15 backdrop-blur-sm rounded-2xl`) |
+| **Font** | Plus Jakarta Sans (Google Font via `next/font`) |
 
 ---
 
-## 📌 Penting untuk AI Agent
+## 12. Penting untuk AI Agent
 
-1. **Setiap halaman baru** — kena tambah ke **kedua-dua** `Sidebar.js` DAN `BottomNav.js`
-2. **`correct_count` dalam sessions** = Faham Sendiri count (bukan sekadar jawab betul)
-3. **localStorage keys**: `studyla_feedback_done`, `studyla_laporan_visited`
-4. **Admin check**: `user.email === 'zaini.jasni@gmail.com'` (hardcoded)
-5. **Landing page**: Guna sync localStorage sniff untuk elak flash sebelum `getSession()` settle
-6. **Selesai screen**: Flat layout — % dalam hero pill, tiada negative margin overlap
+1. **Setiap halaman baru** — kena tambah ke **kedua-dua** `Sidebar.js` DAN `BottomNav.js`.
+2. **`sessions.correct_count`** = bilangan "Faham Sendiri" (cubaan pertama betul), **bukan** jumlah jawapan betul keseluruhan.
+3. **Nama column ialah `parent_id`**, bukan `user_id`, dalam jadual `children`/`sessions` — jangan ulang bug di Known Issues #1.
+4. **localStorage keys yang app pakai**: `studyla_feedback_done`, `studyla_laporan_visited`, `studyla_sessions_completed`.
+5. **Admin check**: `user.email === 'zaini.jasni@gmail.com'` — hardcoded, berulang di banyak fail (lihat Known Issues #8).
+6. **Landing page** guna sync localStorage sniff (cari `'auth-token'` dalam key) untuk elak flash sebelum `getSession()` settle.
+7. **`docs/studyla-schema.sql` adalah sumber kebenaran DB** — bukan apa yang ditulis dalam dokumen lama/ingatan. `feedback` table tiada dalam fail SQL ini (dicipta manual via dashboard).
+8. Sebelum guna/rujuk `increment_topic_sessions` RPC atau `GEMINI_API_KEY`, sedar ia **tidak berfungsi/tidak digunakan** sekarang (Known Issues #2, #3).
 
 ---
 
-## 🔄 Workflow Git
+## 13. Workflow Git
 
 ```bash
 git add .
@@ -263,9 +279,9 @@ git push origin master
 
 ---
 
-# Dokumen Bisnes & Strategi Monetisasi
+# Strategi Bisnes & Monetisasi
 
----
+> Seksyen ini adalah **dokumen strategi/cadangan**, bukan refleksi apa yang sudah dibina dalam kod. Tiada satu pun model monetisasi di bawah ini diimplementasi pada masa audit (Jun 2026) — column `user_profiles.plan` wujud dalam schema tapi tidak digunakan di mana-mana logic.
 
 ## Masalah yang Diselesaikan
 
@@ -273,110 +289,33 @@ git push origin master
 > *"Ibu bapa nak bantu, tapi tak tahu cara nak explain dengan betul."*
 > *"Buat homework sama — esoknya lupa. Tiada progress."*
 
-Kebanyakan platform pembelajaran sedia ada terus bagi jawapan atau hanya fokus pada latihan tanpa membimbing pemahaman.
-
-**Jurang yang ada:**
-- Ibu bapa ingin terlibat tetapi tidak tahu caranya
-- Tiada panduan berstruktur untuk sesi belajar bersama di rumah
-- Progress anak tidak dapat diukur dengan jelas
-- Soalan latihan statik — tidak disesuaikan dengan topik semasa
-
----
-
 ## Kaedah 3 Lapisan
 
 ```
-┌─────────────────────────────────────────────────┐
-│  LAYER 1 — 🧠 FAHAM SOALAN                      │
-│  Bantu anak faham apa yang soalan minta.         │
-├─────────────────────────────────────────────────┤
-│  LAYER 2 — 💡 CARA SELESAIKAN                   │
-│  Tunjuk kaedah langkah demi langkah.             │
-│  Anak belajar proses, bukan hafal jawapan.       │
-├─────────────────────────────────────────────────┤
-│  LAYER 3 — ✏️ CUBA JAWAB                        │
-│  Anak cuba sendiri.                              │
-│  Betul → teruskan. Tak faham → ulang Layer 1.   │
-└─────────────────────────────────────────────────┘
+LAYER 1 — 🧠 FAHAM SOALAN — Bantu anak faham apa yang soalan minta.
+LAYER 2 — 💡 CARA SELESAIKAN — Tunjuk kaedah langkah demi langkah.
+LAYER 3 — ✏️ CUBA JAWAB — Anak cuba sendiri. Betul → teruskan. Tak faham → ulang Layer 1.
 ```
-
----
 
 ## Subjek & Kurikulum
 
-**Kurikulum:** KSSR Semakan 2017 (Tahun 1–5)
-**Jumlah: 4 subjek · 38 topik**
-
-| Subjek | Bilangan Topik |
-|---|---|
-| 🔢 Matematik | 12 |
-| ✍️ Bahasa Melayu | 8 |
-| 🔤 Bahasa Inggeris | 8 |
-| 🔬 Sains | 10 |
-
----
+KSSR Semakan 2017 (Tahun 1–5) · 4 subjek · 38 topik: Matematik (12), Bahasa Melayu (8), Bahasa Inggeris (8), Sains (10).
 
 ## Pengguna Sasaran
 
-| Segmen | Profil |
-|---|---|
-| **Ibu bapa urban** | Bekerja, anak 6–11 tahun, ingin terlibat dalam pendidikan anak |
-| **Ibu bapa suburban** | Bimbang prestasi anak, cari alternatif tuisyen |
-| **Pusat tuisyen kecil** | Cari alat bantu mengajar berteknologi |
+Ibu bapa urban/suburban (anak 6–11 tahun), pusat tuisyen kecil. Saiz pasaran: ~1.4 juta pelajar sekolah rendah Tahun 1–5 (KPM); pasaran edtech Malaysia dijangka USD 350 juta menjelang 2027.
 
-**Saiz Pasaran Malaysia:**
-- 1.4 juta pelajar sekolah rendah Tahun 1–5 (KPM)
-- Pasaran edtech Malaysia dijangka USD 350 juta menjelang 2027
+## Strategi Monetisasi (Cadangan)
 
----
+**Model A — Freemium Subscription** (disyorkan): Free (1 anak, 2 subjek, 5 sesi/bulan) vs Premium RM15/bulan (semua tanpa had) / RM120/tahun.
 
-## Strategi Monetisasi
+**Model B — Lesen Institusi (B2B)**: Pusat tuisyen RM150–350/bulan, sekolah custom.
 
-### Model A — Freemium Subscription *(Disyorkan)*
+**Model C — Pay-Per-Report**: RM2–5 sekali bayar untuk export laporan PDF.
 
-```
-PERCUMA
-  ✓ 1 profil anak
-  ✓ 2 subjek sahaja
-  ✓ 5 sesi / bulan
+**Model D — Tajaan Korporat/CSR**: Sponsor akses percuma komuniti B40.
 
-PREMIUM — RM 15 / bulan
-  ✓ Profil anak tanpa had
-  ✓ Semua 4 subjek + semua topik
-  ✓ Sesi tanpa had
-  ✓ Laporan terperinci + cadangan AI
-  ✓ Export laporan PDF
-
-PREMIUM TAHUNAN — RM 120 / tahun  (jimat 33%)
-```
-
-**Unjuran pendapatan:**
-
-| Pengguna Aktif | Conversion 5% | Pendapatan / Bulan |
-|---|---|---|
-| 1,000 | 50 subscriber | RM 750 |
-| 5,000 | 250 subscriber | RM 3,750 |
-| 20,000 | 1,000 subscriber | RM 15,000 |
-| 50,000 | 2,500 subscriber | RM 37,500 |
-
-### Model B — Lesen Institusi (B2B)
-
-| Pakej | Harga | Liputan |
-|---|---|---|
-| Pusat Tuisyen Kecil | RM 150 / bulan | Sehingga 30 pelajar |
-| Pusat Tuisyen Sederhana | RM 350 / bulan | Sehingga 100 pelajar |
-| Sekolah / Organisasi | Custom | Semua pelajar + dashboard guru |
-
-### Model C — Pay-Per-Report
-Export PDF laporan RM 2–5 per laporan (untuk pengguna free)
-
-### Model D — Tajaan Korporat / CSR
-Syarikat/GLC menaja akses percuma kepada komuniti B40
-
-### Model E — Kandungan Premium *(Masa Depan)*
-Video tutorial, bengkel online, buku panduan digital
-
----
+**Model E — Kandungan Premium** (masa depan): Video tutorial, bengkel online, e-book panduan.
 
 ## Kelebihan Berbanding Pesaing
 
@@ -387,25 +326,17 @@ Video tutorial, bengkel online, buku panduan digital
 | Soalan dijana AI (dinamik) | ✅ | Terhad |
 | KSSR Semakan Malaysia | ✅ | Sebahagian |
 | PWA — tanpa App Store | ✅ | Kebanyakan perlu install |
-| Harga berpatutan | RM 15/bulan | RM 30–80/bulan |
+| Harga berpatutan | RM15/bulan (cadangan) | RM30–80/bulan |
 
----
+## Pelan Pembangunan (Cadangan)
 
-## Pelan Pembangunan
+| Keutamaan | Ciri |
+|---|---|
+| 🔴 Tinggi | Gamifikasi (badge, streak reward), notifikasi push, export PDF laporan |
+| 🟡 Sederhana | Tahun 6 & UPSR, dashboard pusat tuisyen (B2B) |
+| 🟢 Masa depan | Versi Bahasa Inggeris penuh, pasaran Singapura/Indonesia |
 
-| Keutamaan | Ciri | Fasa |
-|---|---|---|
-| 🔴 | Gamifikasi (badge, streak reward) | Fasa 2 |
-| 🔴 | Notifikasi push (reminder belajar) | Fasa 2 |
-| 🔴 | Export PDF laporan | Fasa 2 |
-| 🟡 | Tahun 6 & UPSR topik | Fasa 2 |
-| 🟡 | Dashboard pusat tuisyen (B2B) | Fasa 3 |
-| 🟢 | Versi Bahasa Inggeris penuh | Fasa 3 |
-| 🟢 | Pasaran Singapura / Indonesia | Fasa 3 |
-
----
-
-## Metrik Kejayaan
+## Metrik Kejayaan (Sasaran)
 
 | Metrik | Sasaran |
 |---|---|
@@ -416,4 +347,4 @@ Video tutorial, bengkel online, buku panduan digital
 
 ---
 
-*Kemaskini: Jun 2026 · DCK Tech · zaini.jasni@gmail.com*
+*Kemaskini: Jun 2026 · DCK Tech · zaini.jasni@gmail.com · Diaudit terus daripada kod sumber*
